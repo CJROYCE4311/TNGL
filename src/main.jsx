@@ -346,11 +346,19 @@ function App() {
             {selectedEventId && <button className="ghost compact-button" onClick={exportCsv}>CSV</button>}
           </div>
           <div className="leaderboard">
+            <div className="leaderboard-row leaderboard-header">
+              <span>#</span>
+              <strong>Team</strong>
+              <span>Gross</span>
+              <span>Net</span>
+              <small>Status</small>
+            </div>
             {leaderboard.map((row, index) => (
               <div key={row.team_id} className="leaderboard-row">
                 <span>{index + 1}</span>
                 <strong>{row.team_name}</strong>
                 <span>{row.gross_total ?? '-'}</span>
+                <span>{formatScore(row.net_total)}</span>
                 <small>{row.status}</small>
               </div>
             ))}
@@ -724,6 +732,12 @@ function scoresForTeam(scorecards, teamId) {
 function formatDate(value) {
   if (!value) return 'Event';
   return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date(`${value}T12:00:00`));
+}
+
+function formatScore(value) {
+  const score = Number(value);
+  if (!Number.isFinite(score)) return '-';
+  return Number.isInteger(score) ? String(score) : score.toFixed(1);
 }
 
 function toParLabel(value) {

@@ -80,6 +80,24 @@ export async function handler(event) {
 }
 
 async function refreshScorecardTotal(supabase, scorecardId) {
+  const { data: scorecard, error: scorecardError } = await supabase
+    .from('scorecards')
+    .select(`
+      id,
+      team_id,
+      league_events (
+        format,
+        hole_count
+      ),
+      teams (
+        team_handicap
+      )
+    `)
+    .eq('id', scorecardId)
+    .single();
+
+  if (scorecardError) throw scorecardError;
+
   const { data: scores, error } = await supabase
     .from('hole_scores')
     .select('gross_score')
@@ -87,14 +105,47 @@ async function refreshScorecardTotal(supabase, scorecardId) {
 
   if (error) throw error;
   const grossTotal = (scores || []).reduce((total, score) => total + (Number(score.gross_score) || 0), 0);
+  const teamHandicap = await resolveTeamHandicap(supabase, scorecard);
+  const netTotal = grossTotal && teamHandicap !== null ? grossTotal - teamHandicap : null;
 
   const { error: updateError } = await supabase
     .from('scorecards')
     .update({
       gross_total: grossTotal || null,
+      net_total: netTotal,
       updated_at: new Date().toISOString()
     })
     .eq('id', scorecardId);
 
   if (updateError) throw updateError;
+}
+
+async function resolveTeamHandicap(supabase, scorecard) {
+  const storedHandicap = Number(scorecard.teams?.team_handicap);
+  if (Number.isFinite(storedHandicap)) return storedHandicap;
+
+  if (scorecard.league_events?.format !== 'scramble') return null;
+
+  const { data, error } = await supabase
+    .from('team_players')
+    .select('course_handicap_100')
+    .eq('team_id', scorecard.team_id)
+    .not('course_handicap_100', 'is', null);
+
+  if (error) throw error;
+
+  const courseHandicaps = (data || [])
+    .map((row) => Number(row.course_handicap_100))
+    .filter(Number.isFinite)
+    .sort((a, b) => a - b);
+
+  if (!courseHandicaps.length) return null;
+
+  const allocations = [0.25, 0.2, 0.15, 0.1, 0.1];
+  const eighteenHoleHandicap = courseHandicaps.reduce(
+    (total, handicap, index) => total + handicap * (allocations[index] || 0),
+    0
+  );
+  const holeFactor = Number(scorecard.league_events?.hole_count || 9) / 18;
+  return Math.round(eighteenHoleHandicap * holeFactor);
 }

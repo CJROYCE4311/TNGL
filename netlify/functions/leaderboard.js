@@ -27,6 +27,7 @@ export async function handler(event) {
         )
       `)
       .eq('event_id', eventId)
+      .order('net_total', { ascending: true, nullsFirst: false })
       .order('gross_total', { ascending: true, nullsFirst: false });
 
     if (error) throw error;
