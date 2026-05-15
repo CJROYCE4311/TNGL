@@ -616,6 +616,13 @@ h2 {
   font-weight: 900;
 }
 
+.leader-score small {
+  color: #5f6a61;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: right;
+}
+
 .mini-holes {
   display: grid;
   gap: 4px;

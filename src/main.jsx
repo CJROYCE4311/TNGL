@@ -9,6 +9,20 @@ const tonightHoles = Array.from({ length: 9 }, (_, index) => ({ hole_number: ind
 const authRedirectUrl = import.meta.env.VITE_AUTH_REDIRECT_URL || window.location.origin;
 const tonightStateVersion = 'blank-foursomes-v2';
 const foursomeOptions = Array.from({ length: 8 }, (_, index) => index + 1);
+const frontNineHandicaps = {
+  royce: 4,
+  'pejka-doetzel': 3,
+  kroutil: 3,
+  bellows: 3,
+  hamilton: 5,
+  lamb: 7,
+  culy: 4,
+  'wigder-laporta': 4,
+  hill: 6,
+  ackley: 5,
+  'holman-bayerle': 4,
+  solomon: 6
+};
 
 const tonightCouples = [
   { id: 'royce', name: 'Royce', players: ['Miki Royce', 'Christopher Royce'] },
@@ -409,13 +423,14 @@ function TonightScrambleApp() {
   const leaderboardRows = activeCouples
     .map((couple) => ({
       ...couple,
-      total: totalForCouple(state.scores, couple.id),
+      gross: totalForCouple(state.scores, couple.id),
+      net: netForCouple(state.scores, couple.id),
       played: playedForCouple(state.scores, couple.id),
       submitted: Boolean(state.submitted[couple.id])
     }))
     .sort((a, b) => {
       if (a.played !== b.played) return b.played - a.played;
-      return a.total - b.total;
+      return a.net - b.net;
     });
 
   function toggleCouple(coupleId) {
@@ -479,13 +494,14 @@ function TonightScrambleApp() {
   }
 
   function exportTonightCsv() {
-    const columns = ['couple', 'players', 'foursome', 'played', 'total', ...tonightHoles.map((hole) => `hole_${hole.hole_number}`)];
+    const columns = ['couple', 'players', 'foursome', 'played', 'gross', 'net', ...tonightHoles.map((hole) => `hole_${hole.hole_number}`)];
     const rows = leaderboardRows.map((row) => [
       row.name,
       row.players.join(' / '),
       row.group,
       row.played,
-      row.total || '',
+      row.gross || '',
+      row.played ? row.net : '',
       ...tonightHoles.map((hole) => state.scores[row.id]?.[hole.hole_number] || '')
     ]);
     downloadText('thursday-couples-scramble-tonight.csv', [columns, ...rows].map((row) => row.map(csvCell).join(',')).join('\n'));
@@ -696,8 +712,9 @@ function LeaderboardView({ rows, scores, onExport, onReset }) {
               <p>{row.players.join(' + ')}</p>
             </div>
             <div className="leader-score">
-              <strong>{row.total || '-'}</strong>
-              <span>{row.played ? `${row.played}/9 holes` : 'No scores'}</span>
+              <strong>{row.played ? row.net : '-'}</strong>
+              <span>Net</span>
+              <small>{row.played ? `Gross ${row.gross || '-'} · ${row.played}/9 holes` : 'No scores'}</small>
             </div>
             <div className="mini-holes">
               {tonightHoles.map((hole) => (
@@ -723,6 +740,12 @@ function readTonightState() {
 
 function totalForCouple(scores, coupleId) {
   return Object.values(scores[coupleId] || {}).reduce((sum, score) => sum + (Number(score) || 0), 0);
+}
+
+function netForCouple(scores, coupleId) {
+  const gross = totalForCouple(scores, coupleId);
+  if (!gross) return 0;
+  return gross - (frontNineHandicaps[coupleId] || 0);
 }
 
 function playedForCouple(scores, coupleId) {
