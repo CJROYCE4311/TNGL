@@ -7,26 +7,30 @@ import './styles.css';
 const emptyScores = {};
 const tonightHoles = Array.from({ length: 9 }, (_, index) => ({ hole_number: index + 1 }));
 const authRedirectUrl = import.meta.env.VITE_AUTH_REDIRECT_URL || window.location.origin;
+const tonightStateVersion = 'blank-foursomes-v2';
+const foursomeOptions = Array.from({ length: 8 }, (_, index) => index + 1);
 
 const tonightCouples = [
-  { id: 'royce', name: 'Royce', players: ['Miki Royce', 'Christopher Royce'], checkedIn: true },
-  { id: 'pejka-doetzel', name: 'Pejka / Doetzel', players: ['Mike Pejka', 'Diana Doetzel'], checkedIn: true },
-  { id: 'kroutil', name: 'Kroutil', players: ['Richard Kroutil', 'Carrie Kroutil'], checkedIn: true },
-  { id: 'bellows', name: 'Bellows', players: ['Trevor Bellows', 'Amy Bellows'], checkedIn: true },
-  { id: 'hamilton', name: 'Hamilton', players: ['Eric Hamilton', 'Lorena Hamilton'], checkedIn: true },
-  { id: 'lamb', name: 'Lamb', players: ['Eric Lamb', 'Nicole Lamb'], checkedIn: true },
-  { id: 'culy', name: 'Culy', players: ['Craig Culy', 'Jennifer Culy'], checkedIn: true },
-  { id: 'wigder-laporta', name: 'Wigder / LaPorta', players: ['Tim Wigder', 'Amy LaPorta'], checkedIn: true },
-  { id: 'hill', name: 'Hill', players: ['Rob Hill', 'Mikki Hill'], checkedIn: true },
-  { id: 'ackley', name: 'Ackley', players: ['BJ Ackley', 'Cati Ackley'], checkedIn: true },
-  { id: 'holman-bayerle', name: 'Holman / Bayerle', players: ['Julie Holman', 'Kirby Bayerle'], checkedIn: true },
-  { id: 'solomon', name: 'Solomon', players: ['David Solomon', 'Marianne Solomon'], checkedIn: true }
+  { id: 'royce', name: 'Royce', players: ['Miki Royce', 'Christopher Royce'] },
+  { id: 'pejka-doetzel', name: 'Pejka / Doetzel', players: ['Mike Pejka', 'Diana Doetzel'] },
+  { id: 'kroutil', name: 'Kroutil', players: ['Richard Kroutil', 'Carrie Kroutil'] },
+  { id: 'bellows', name: 'Bellows', players: ['Trevor Bellows', 'Amy Bellows'] },
+  { id: 'hamilton', name: 'Hamilton', players: ['Eric Hamilton', 'Lorena Hamilton'] },
+  { id: 'lamb', name: 'Lamb', players: ['Eric Lamb', 'Nicole Lamb'] },
+  { id: 'culy', name: 'Culy', players: ['Craig Culy', 'Jennifer Culy'] },
+  { id: 'wigder-laporta', name: 'Wigder / LaPorta', players: ['Tim Wigder', 'Amy LaPorta'] },
+  { id: 'hill', name: 'Hill', players: ['Rob Hill', 'Mikki Hill'] },
+  { id: 'ackley', name: 'Ackley', players: ['BJ Ackley', 'Cati Ackley'] },
+  { id: 'holman-bayerle', name: 'Holman / Bayerle', players: ['Julie Holman', 'Kirby Bayerle'] },
+  { id: 'solomon', name: 'Solomon', players: ['David Solomon', 'Marianne Solomon'] }
 ];
 
 const initialTonightState = {
-  couples: tonightCouples.map((couple, index) => ({
+  version: tonightStateVersion,
+  couples: tonightCouples.map((couple) => ({
     ...couple,
-    group: Math.floor(index / 2) + 1
+    checkedIn: false,
+    group: ''
   })),
   scores: {},
   submitted: {}
@@ -373,7 +377,7 @@ function App() {
 function TonightScrambleApp() {
   const [state, setState] = useState(() => readTonightState());
   const [view, setView] = useState('score');
-  const [activeGroup, setActiveGroup] = useState(1);
+  const [activeGroup, setActiveGroup] = useState('');
 
   useEffect(() => {
     localStorage.setItem('thursdayTonightScoring', JSON.stringify(state));
@@ -383,7 +387,8 @@ function TonightScrambleApp() {
   const groups = useMemo(() => {
     const grouped = new Map();
     for (const couple of activeCouples) {
-      const group = Number(couple.group) || 1;
+      const group = Number(couple.group);
+      if (!Number.isInteger(group) || group < 1) continue;
       if (!grouped.has(group)) grouped.set(group, []);
       grouped.get(group).push(couple);
     }
@@ -395,6 +400,8 @@ function TonightScrambleApp() {
   useEffect(() => {
     if (groups.length && !groups.some((group) => group.group === activeGroup)) {
       setActiveGroup(groups[0].group);
+    } else if (!groups.length && activeGroup) {
+      setActiveGroup('');
     }
   }, [groups, activeGroup]);
 
@@ -415,8 +422,16 @@ function TonightScrambleApp() {
     setState((current) => ({
       ...current,
       couples: current.couples.map((couple) =>
-        couple.id === coupleId ? { ...couple, checkedIn: !couple.checkedIn } : couple
-      )
+        couple.id === coupleId
+          ? { ...couple, checkedIn: !couple.checkedIn, group: couple.checkedIn ? '' : couple.group }
+          : couple
+      ),
+      scores: current.couples.find((couple) => couple.id === coupleId)?.checkedIn
+        ? Object.fromEntries(Object.entries(current.scores).filter(([id]) => id !== coupleId))
+        : current.scores,
+      submitted: current.couples.find((couple) => couple.id === coupleId)?.checkedIn
+        ? Object.fromEntries(Object.entries(current.submitted).filter(([id]) => id !== coupleId))
+        : current.submitted
     }));
   }
 
@@ -424,7 +439,7 @@ function TonightScrambleApp() {
     setState((current) => ({
       ...current,
       couples: current.couples.map((couple) =>
-        couple.id === coupleId ? { ...couple, group: Number(group) } : couple
+        couple.id === coupleId ? { ...couple, group: group ? Number(group) : '' } : couple
       )
     }));
   }
@@ -460,7 +475,7 @@ function TonightScrambleApp() {
 
   function resetTonight() {
     setState(initialTonightState);
-    setActiveGroup(1);
+    setActiveGroup('');
   }
 
   function exportTonightCsv() {
@@ -483,7 +498,7 @@ function TonightScrambleApp() {
           <AnimatedLeagueLogo />
           <p className="eyebrow">Sterling Grove</p>
           <h1>Thursday Couples Scramble</h1>
-          <p className="hero-subtitle">Check in couples, pair foursomes, score both teams, and keep the leaderboard moving live.</p>
+          <p className="hero-subtitle">Check in only tonight's couples, assign foursomes before tee time, and keep the leaderboard moving live.</p>
           <div className="view-toggle" aria-label="View">
             <button className={view === 'score' ? 'active' : ''} onClick={() => setView('score')}>Score</button>
             <button className={view === 'leaderboard' ? 'active' : ''} onClick={() => setView('leaderboard')}>Leaderboard</button>
@@ -497,7 +512,7 @@ function TonightScrambleApp() {
 
       <section className="tonight-stats">
         <div><strong>{activeCouples.length}</strong><span>Couples In</span></div>
-        <div><strong>{groups.length}</strong><span>Foursomes</span></div>
+        <div><strong>{groups.length}</strong><span>Assigned Foursomes</span></div>
         <div><strong>{leaderboardRows.filter((row) => row.submitted).length}</strong><span>Cards In</span></div>
       </section>
 
@@ -554,8 +569,13 @@ function RosterPanel({ state, onToggle, onGroupChange }) {
             </div>
             <label className="group-picker">
               <span>Foursome</span>
-              <select value={couple.group} onChange={(event) => onGroupChange(couple.id, event.target.value)}>
-                {Array.from({ length: 6 }, (_, index) => index + 1).map((group) => (
+              <select
+                value={couple.group}
+                onChange={(event) => onGroupChange(couple.id, event.target.value)}
+                disabled={!couple.checkedIn}
+              >
+                <option value="">Blank</option>
+                {foursomeOptions.map((group) => (
                   <option key={group} value={group}>{group}</option>
                 ))}
               </select>
@@ -568,6 +588,14 @@ function RosterPanel({ state, onToggle, onGroupChange }) {
 }
 
 function GroupTabs({ groups, activeGroup, onChange }) {
+  if (!groups.length) {
+    return (
+      <div className="group-tabs empty-tabs">
+        <span>No foursomes assigned yet</span>
+      </div>
+    );
+  }
+
   return (
     <div className="group-tabs">
       {groups.map((group) => (
@@ -588,8 +616,8 @@ function ScoreFoursome({ group, scores, submitted, onScore, onSubmit }) {
   if (!group) {
     return (
       <section className="tonight-panel empty-scorecard">
-        <h2>Select at least one couple</h2>
-        <p className="muted">Check in tonight's players to create scramble cards.</p>
+        <h2>Assign a foursome</h2>
+        <p className="muted">Check in tonight's couples, then choose a foursome number to create a scorecard.</p>
       </section>
     );
   }
@@ -686,7 +714,7 @@ function LeaderboardView({ rows, scores, onExport, onReset }) {
 function readTonightState() {
   try {
     const saved = JSON.parse(localStorage.getItem('thursdayTonightScoring'));
-    if (saved?.couples && saved?.scores) return saved;
+    if (saved?.version === tonightStateVersion && saved?.couples && saved?.scores) return saved;
   } catch {
     return initialTonightState;
   }
