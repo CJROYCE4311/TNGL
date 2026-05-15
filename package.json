@@ -1,0 +1,25 @@
+{
+  "name": "thursday-league-scoring-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "netlify dev",
+    "dev:vite": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "seed:sql": "node scripts/build-seed-sql.js",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.2",
+    "eslint": "^9.11.1",
+    "netlify-cli": "^26.0.2",
+    "vite": "^8.0.13"
+  }
+}
