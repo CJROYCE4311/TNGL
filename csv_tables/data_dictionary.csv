@@ -1,0 +1,12 @@
+table_name,primary_key,grain,notes
+courses.csv,course_id,One golf course,Course dimension table.
+leagues.csv,league_id,One league setup/snapshot,Stores league-level defaults and source scrape date.
+tee_ratings.csv,tee_rating_id,One course/gender/tee rating,Referenced by player_handicaps. Includes Women Red from helper/formula data.
+players.csv,player_id,One unique player,Names appear once here to avoid duplicated player attributes.
+player_handicaps.csv,player_handicap_id,One player handicap snapshot for a league/date,"Foreign keys: player_id, league_id, tee_rating_id."
+best_ball_teams.csv,best_ball_team_id,One best-ball team slot,Foreign key: league_id. Empty team slots are retained with is_active=false.
+best_ball_team_players.csv,best_ball_team_player_id,One player assigned to one best-ball team,"Foreign keys: best_ball_team_id, player_id."
+scramble_allocation_rules.csv,scramble_role,One scramble allocation role,Lookup table for A/B/C/D/E allocation percentages.
+scramble_teams.csv,scramble_team_id,One scramble team slot,Foreign key: league_id. Empty team slots are retained with is_active=false.
+scramble_team_players.csv,scramble_team_player_id,One player assigned to one scramble team,"Foreign keys: scramble_team_id, player_id, assigned_role."
+relationships.csv,from_table + from_column,One table relationship,Join map for analysis and report-building tools.

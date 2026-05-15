@@ -1,0 +1,25 @@
+player_handicap_id,player_id,league_id,effective_date,league_tee,tee_rating_id,handicap_index,course_rating,slope,course_handicap_100,best_ball_handicap_95,notes,source_sheet,source_row
+handicap_sg_thursday_2026_player_michaeleane_royce,player_michaeleane_royce,sg_thursday_2026,2026-04-30,Red,tee_women_red,27,67.3,112,22,21,,League Data,9
+handicap_sg_thursday_2026_player_mike_pejka,player_mike_pejka,sg_thursday_2026,2026-04-30,Blue,tee_men_blue,11.3,70.5,124,11,10,,League Data,10
+handicap_sg_thursday_2026_player_richard_kroutil,player_richard_kroutil,sg_thursday_2026,2026-04-30,Blue,tee_men_blue,8.7,70.5,124,8,8,,League Data,11
+handicap_sg_thursday_2026_player_carrie_kroutil,player_carrie_kroutil,sg_thursday_2026,2026-04-30,Red,tee_women_red,24.2,67.3,112,19,18,,League Data,12
+handicap_sg_thursday_2026_player_diana_doetzel,player_diana_doetzel,sg_thursday_2026,2026-04-30,Red,tee_women_red,19.3,67.3,112,14,13,,League Data,13
+handicap_sg_thursday_2026_player_christopher_royce,player_christopher_royce,sg_thursday_2026,2026-04-30,Blue,tee_men_blue,13.3,70.5,124,13,12,,League Data,14
+handicap_sg_thursday_2026_player_trevor_bellows,player_trevor_bellows,sg_thursday_2026,2026-04-30,Blue,tee_men_blue,7.8,70.5,124,7,7,,League Data,15
+handicap_sg_thursday_2026_player_amy_bellows,player_amy_bellows,sg_thursday_2026,2026-04-30,Red,tee_women_red,20.1,67.3,112,15,14,,League Data,16
+handicap_sg_thursday_2026_player_eric_hamilton,player_eric_hamilton,sg_thursday_2026,2026-04-30,Blue,tee_men_blue,17.7,70.5,124,18,17,,League Data,17
+handicap_sg_thursday_2026_player_lorena_hamilton,player_lorena_hamilton,sg_thursday_2026,2026-04-30,Red,tee_women_red,31.2,67.3,112,26,25,,League Data,18
+handicap_sg_thursday_2026_player_eric_lamb,player_eric_lamb,sg_thursday_2026,2026-04-30,Blue,tee_men_blue,25.7,70.5,124,27,26,,League Data,19
+handicap_sg_thursday_2026_player_nicole_lamb,player_nicole_lamb,sg_thursday_2026,2026-04-30,Red,tee_women_red,33.7,67.3,112,29,28,,League Data,20
+handicap_sg_thursday_2026_player_craig_culy,player_craig_culy,sg_thursday_2026,2026-04-30,Blue,tee_men_blue,12.2,70.5,124,12,11,,League Data,21
+handicap_sg_thursday_2026_player_jennifer_culy,player_jennifer_culy,sg_thursday_2026,2026-04-30,Red,tee_women_red,26.9,67.3,112,22,21,,League Data,22
+handicap_sg_thursday_2026_player_tim_wigder,player_tim_wigder,sg_thursday_2026,2026-04-30,Blue,tee_men_blue,6.7,70.5,124,6,6,,League Data,23
+handicap_sg_thursday_2026_player_amy_laporta,player_amy_laporta,sg_thursday_2026,2026-04-30,Red,tee_women_red,47,67.3,112,42,40,,League Data,24
+handicap_sg_thursday_2026_player_rob_hill,player_rob_hill,sg_thursday_2026,2026-04-30,Blue,tee_men_blue,18.7,70.5,124,19,18,,League Data,25
+handicap_sg_thursday_2026_player_mikki_hill,player_mikki_hill,sg_thursday_2026,2026-04-30,Red,tee_women_red,36.3,67.3,112,31,29,,League Data,26
+handicap_sg_thursday_2026_player_bj_ackley,player_bj_ackley,sg_thursday_2026,2026-04-30,Blue,tee_men_blue,13.6,70.5,124,13,12,,League Data,27
+handicap_sg_thursday_2026_player_cati_ackley,player_cati_ackley,sg_thursday_2026,2026-04-30,Red,tee_women_red,32.2,67.3,112,27,26,,League Data,28
+handicap_sg_thursday_2026_player_julie_holman,player_julie_holman,sg_thursday_2026,2026-04-30,Red,tee_women_red,37.7,67.3,112,33,31,,League Data,29
+handicap_sg_thursday_2026_player_kirby_bayerle,player_kirby_bayerle,sg_thursday_2026,2026-04-30,Blue,tee_men_blue,9.9,70.5,124,9,9,,League Data,30
+handicap_sg_thursday_2026_player_david_solomon,player_david_solomon,sg_thursday_2026,2026-05-15,Blue,tee_men_blue,18.6,70.5,124,19,18,Added from GHIN golfer lookup,GHIN Lookup,31
+handicap_sg_thursday_2026_player_marianne_solomon,player_marianne_solomon,sg_thursday_2026,2026-05-15,Red,tee_women_red,40.2,67.3,112,35,33,Added from GHIN golfer lookup,GHIN Lookup,32

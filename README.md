@@ -11,7 +11,7 @@ This app is intentionally separate from the Caddie server app and does not conne
 - Supabase magic-link login.
 - Netlify Functions for all league reads and scoring writes.
 - Supabase SQL schema in `supabase-schema.sql`.
-- CSV-to-SQL seed script that preserves existing league IDs from `../csv_tables`.
+- CSV-to-SQL seed script that preserves existing league IDs from `csv_tables`.
 - Admin leaderboard and authenticated CSV export.
 
 ## Local Setup
@@ -76,7 +76,7 @@ Supported formats:
 
 Then run the generated SQL in Supabase SQL Editor.
 
-The seed script imports:
+The seed script imports from the app's tracked `csv_tables` folder:
 
 - `csv_tables/courses.csv`
 - `csv_tables/leagues.csv`

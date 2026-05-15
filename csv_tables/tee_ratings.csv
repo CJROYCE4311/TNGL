@@ -1,0 +1,7 @@
+tee_rating_id,course_id,gender,tee,course_rating,slope,is_men_league_tee,is_women_league_tee
+tee_men_black,course_sterling_grove_gcc,Men,Black,74,132,false,false
+tee_men_blue,course_sterling_grove_gcc,Men,Blue,70.5,124,true,false
+tee_men_blue_black,course_sterling_grove_gcc,Men,Blue/Black,72.2,128,false,false
+tee_men_blue_white,course_sterling_grove_gcc,Men,Blue/White,68.9,120,false,false
+tee_men_white,course_sterling_grove_gcc,Men,White,67.5,113,false,false
+tee_women_red,course_sterling_grove_gcc,Women,Red,67.3,112,false,true

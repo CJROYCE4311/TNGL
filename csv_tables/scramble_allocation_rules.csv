@@ -1,0 +1,6 @@
+scramble_role,role_order,allocation_pct,description
+A,1,0.25,Lowest selected handicap
+B,2,0.2,Second-lowest selected handicap
+C,3,0.15,Third-lowest selected handicap
+D,4,0.1,Highest player with four selected players
+E,5,0.1,Highest player when five players are selected

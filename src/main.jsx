@@ -19,7 +19,8 @@ const tonightCouples = [
   { id: 'wigder-laporta', name: 'Wigder / LaPorta', players: ['Tim Wigder', 'Amy LaPorta'], checkedIn: true },
   { id: 'hill', name: 'Hill', players: ['Rob Hill', 'Mikki Hill'], checkedIn: true },
   { id: 'ackley', name: 'Ackley', players: ['BJ Ackley', 'Cati Ackley'], checkedIn: true },
-  { id: 'holman-bayerle', name: 'Holman / Bayerle', players: ['Julie Holman', 'Kirby Bayerle'], checkedIn: true }
+  { id: 'holman-bayerle', name: 'Holman / Bayerle', players: ['Julie Holman', 'Kirby Bayerle'], checkedIn: true },
+  { id: 'solomon', name: 'Solomon', players: ['David Solomon', 'Marianne Solomon'], checkedIn: true }
 ];
 
 const initialTonightState = {

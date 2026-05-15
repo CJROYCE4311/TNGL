@@ -1,0 +1,11 @@
+scramble_team_player_id,scramble_team_id,spot_order,spot_label,is_optional_slot,player_id,player_name,course_handicap_100,assigned_role,allocation_pct,player_strokes,source_sheet,source_row
+scramble_team_01_spot_1,scramble_team_01,1,Player 1,false,player_michaeleane_royce,Michaeleane (Miki) Royce,22,,,,Scramble,8
+scramble_team_01_spot_2,scramble_team_01,2,Player 2,false,player_diana_doetzel,Diana Doetzel,14,,,,Scramble,9
+scramble_team_01_spot_3,scramble_team_01,3,Player 3,false,player_lorena_hamilton,Lorena Hamilton,26,,,,Scramble,10
+scramble_team_01_spot_4,scramble_team_01,4,Player 4,false,player_jennifer_culy,Jennifer Culy,22,,,,Scramble,11
+scramble_team_01_spot_5,scramble_team_01,5,Optional 5th,true,player_nicole_lamb,Nicole Lamb,29,,,,Scramble,12
+scramble_team_02_spot_1,scramble_team_02,1,Player 1,false,player_mike_pejka,Mike Pejka,11,,,,Scramble,15
+scramble_team_02_spot_2,scramble_team_02,2,Player 2,false,player_richard_kroutil,Richard Kroutil,8,,,,Scramble,16
+scramble_team_02_spot_3,scramble_team_02,3,Player 3,false,player_christopher_royce,Christopher Royce (me),13,,,,Scramble,17
+scramble_team_02_spot_4,scramble_team_02,4,Player 4,false,player_eric_lamb,Eric Lamb,27,,,,Scramble,18
+scramble_team_02_spot_5,scramble_team_02,5,Optional 5th,true,player_craig_culy,Craig Culy,12,,,,Scramble,19

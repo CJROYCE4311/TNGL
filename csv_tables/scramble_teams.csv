@@ -1,0 +1,5 @@
+scramble_team_id,league_id,team_name,player_count,is_active,team_handicap,front_9_handicap,opponent_scramble_team_id,opponent_front_9_handicap,shots_off_opponent,source_sheet,source_row
+scramble_team_01,sg_thursday_2026,Team 1,5,true,,,scramble_team_02,,,Scramble,8
+scramble_team_02,sg_thursday_2026,Team 2,5,true,,,scramble_team_01,,,Scramble,15
+scramble_team_03,sg_thursday_2026,Team 3,0,false,,,,,,Scramble,22
+scramble_team_04,sg_thursday_2026,Team 4,0,false,,,,,,Scramble,29

@@ -1,0 +1,9 @@
+best_ball_team_id,league_id,team_number,format_pct,player_count,is_active,source_sheet,source_row
+best_ball_team_01,sg_thursday_2026,1,0.95,2,TRUE,Best Ball,7
+best_ball_team_02,sg_thursday_2026,2,0.95,2,TRUE,Best Ball,8
+best_ball_team_03,sg_thursday_2026,3,0.95,0,FALSE,Best Ball,9
+best_ball_team_04,sg_thursday_2026,4,0.95,0,FALSE,Best Ball,10
+best_ball_team_05,sg_thursday_2026,5,0.95,0,FALSE,Best Ball,11
+best_ball_team_06,sg_thursday_2026,6,0.95,0,FALSE,Best Ball,12
+best_ball_team_07,sg_thursday_2026,7,0.95,0,FALSE,Best Ball,13
+best_ball_team_08,sg_thursday_2026,8,0.95,0,FALSE,Best Ball,14

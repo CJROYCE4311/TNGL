@@ -1,10 +1,12 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const appDir = dirname(fileURLToPath(import.meta.url));
-const projectDir = resolve(appDir, '..', '..');
-const csvDir = resolve(projectDir, 'csv_tables');
+const appRoot = resolve(appDir, '..');
+const localCsvDir = resolve(appRoot, 'csv_tables');
+const parentCsvDir = resolve(appRoot, '..', 'csv_tables');
+const csvDir = existsSync(localCsvDir) ? localCsvDir : parentCsvDir;
 
 const args = new Map(
   process.argv.slice(2).map((arg) => {

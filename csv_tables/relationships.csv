@@ -1,0 +1,14 @@
+from_table,from_column,to_table,to_column,relationship
+leagues.csv,course_id,courses.csv,course_id,many-to-one
+tee_ratings.csv,course_id,courses.csv,course_id,many-to-one
+player_handicaps.csv,player_id,players.csv,player_id,many-to-one
+player_handicaps.csv,league_id,leagues.csv,league_id,many-to-one
+player_handicaps.csv,tee_rating_id,tee_ratings.csv,tee_rating_id,many-to-one
+best_ball_teams.csv,league_id,leagues.csv,league_id,many-to-one
+best_ball_team_players.csv,best_ball_team_id,best_ball_teams.csv,best_ball_team_id,many-to-one
+best_ball_team_players.csv,player_id,players.csv,player_id,many-to-one
+scramble_teams.csv,league_id,leagues.csv,league_id,many-to-one
+scramble_teams.csv,opponent_scramble_team_id,scramble_teams.csv,scramble_team_id,many-to-one self reference
+scramble_team_players.csv,scramble_team_id,scramble_teams.csv,scramble_team_id,many-to-one
+scramble_team_players.csv,player_id,players.csv,player_id,many-to-one
+scramble_team_players.csv,assigned_role,scramble_allocation_rules.csv,scramble_role,many-to-one

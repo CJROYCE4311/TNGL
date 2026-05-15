@@ -1,0 +1,5 @@
+best_ball_team_player_id,best_ball_team_id,position,player_id,player_name,gender,league_tee,course_handicap_100,best_ball_handicap_95,front_9_handicap,source_sheet,source_row
+best_ball_team_01_player_1,best_ball_team_01,1,player_michaeleane_royce,Michaeleane (Miki) Royce,,Red,22,21,11,Best Ball,7
+best_ball_team_01_player_2,best_ball_team_01,2,player_christopher_royce,Christopher Royce (me),,Blue,13,12,6,Best Ball,7
+best_ball_team_02_player_1,best_ball_team_02,1,player_mike_pejka,Mike Pejka,,Blue,11,10,5,Best Ball,8
+best_ball_team_02_player_2,best_ball_team_02,2,player_diana_doetzel,Diana Doetzel,,Red,14,13,7,Best Ball,8
