@@ -27,6 +27,25 @@ export async function handler(event) {
     if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
 
     const body = parseJson(event);
+    if (body.action === 'resetScores') {
+      const leagueEvent = body.eventId
+        ? { id: body.eventId }
+        : await activeEvent(supabase);
+      if (!leagueEvent?.id) throw new Error('No open event to reset');
+
+      const { error: deleteError } = await supabase
+        .from('scorecards')
+        .delete()
+        .eq('event_id', leagueEvent.id);
+      if (deleteError) throw deleteError;
+
+      const [players, detail] = await Promise.all([
+        latestPlayerRows(supabase),
+        eventDetail(supabase, leagueEvent.id)
+      ]);
+      return json(200, { players, ...detail, reset: true });
+    }
+
     const gameType = normalizeGameType(body.gameType);
     const eventDate = normalizeDate(body.eventDate);
     const status = ['draft', 'open', 'closed'].includes(body.status) ? body.status : 'open';

@@ -30,9 +30,12 @@ function AdminNight() {
   const [status, setStatus] = useState('open');
   const [teams, setTeams] = useState([]);
   const [draftTeam, setDraftTeam] = useState({ teamName: 'Team 1', playerIds: [] });
+  const [activeEventId, setActiveEventId] = useState('');
+  const [scorecardCount, setScorecardCount] = useState(0);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
 
   useEffect(() => {
     loadAdmin();
@@ -43,6 +46,8 @@ function AdminNight() {
     try {
       const data = await apiGet('/.netlify/functions/admin-event');
       setPlayers(data.players || []);
+      setActiveEventId(data.event?.id || '');
+      setScorecardCount(data.scorecards?.length || 0);
       if (data.event) {
         setEventDate(data.event.event_date || todayIso());
         setGameType(data.event.game_type || 'couples_scramble');
@@ -60,6 +65,32 @@ function AdminNight() {
       }
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  async function resetScores() {
+    if (!activeEventId) {
+      setError('Open an event before resetting scores.');
+      return;
+    }
+
+    const confirmed = window.confirm('Reset all saved scorecards and clear the leaderboard for this game?');
+    if (!confirmed) return;
+
+    setResetBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      await apiPost('/.netlify/functions/admin-event', {
+        action: 'resetScores',
+        eventId: activeEventId
+      });
+      setMessage('Game scores reset. Scorecards and leaderboard are clear.');
+      await loadAdmin();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setResetBusy(false);
     }
   }
 
@@ -176,10 +207,21 @@ function AdminNight() {
               <p className="eyebrow">Setup</p>
               <h2>Tonight's Game</h2>
             </div>
-            <button type="button" onClick={saveEvent} disabled={busy}>
-              {busy ? 'Saving...' : 'Publish Teams'}
-            </button>
+            <div className="setup-actions">
+              <button type="button" onClick={saveEvent} disabled={busy || resetBusy}>
+                {busy ? 'Saving...' : 'Publish Teams'}
+              </button>
+              <button
+                type="button"
+                className="danger"
+                onClick={resetScores}
+                disabled={resetBusy || busy || !activeEventId || scorecardCount === 0}
+              >
+                {resetBusy ? 'Resetting...' : 'Reset Game'}
+              </button>
+            </div>
           </div>
+          <p className="reset-note">{scorecardCount} saved scorecard{scorecardCount === 1 ? '' : 's'}</p>
           <div className="form-grid">
             <label>
               Date

@@ -65,6 +65,10 @@ button:disabled {
   background: #b85f34;
 }
 
+.danger {
+  background: #9f2f21;
+}
+
 .ghost {
   background: transparent;
   border: 1px solid #bdc7bc;
@@ -231,6 +235,21 @@ h2 {
   display: grid;
   gap: 12px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.setup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.reset-note {
+  color: #647066;
+  font-size: 0.8rem;
+  font-weight: 800;
+  margin: -4px 0 14px;
+  text-align: right;
 }
 
 .draft-team-panel .section-heading > strong {
@@ -591,9 +610,18 @@ h2 {
   .admin-grid,
   .form-grid,
   .draft-team-head,
+  .setup-actions,
   .builder-actions,
   .multi-card-actions {
     grid-template-columns: 1fr;
+  }
+
+  .setup-actions {
+    display: grid;
+  }
+
+  .reset-note {
+    text-align: left;
   }
 
   .section-heading {
