@@ -6,7 +6,7 @@ import {
   normalizeGameType,
   validateTeamSize
 } from './_scoring.js';
-import { handleOptions, json, parseJson, serviceClient } from './_supabase.js';
+import { assertUuid, handleOptions, json, parseJson, serviceClient } from './_supabase.js';
 
 export async function handler(event) {
   const options = handleOptions(event);
@@ -44,6 +44,26 @@ export async function handler(event) {
         eventDetail(supabase, leagueEvent.id)
       ]);
       return json(200, { players, ...detail, reset: true });
+    }
+
+    if (body.action === 'removeTeam') {
+      assertUuid(body.eventId, 'eventId');
+      assertUuid(body.teamId, 'teamId');
+
+      const { data: deletedTeams, error: deleteError } = await supabase
+        .from('teams')
+        .delete()
+        .eq('event_id', body.eventId)
+        .eq('id', body.teamId)
+        .select('id');
+      if (deleteError) throw deleteError;
+      if (!deletedTeams?.length) throw new Error('Team not found for this event');
+
+      const [players, detail] = await Promise.all([
+        latestPlayerRows(supabase),
+        eventDetail(supabase, body.eventId)
+      ]);
+      return json(200, { players, ...detail, removedTeamId: body.teamId });
     }
 
     const gameType = normalizeGameType(body.gameType);
@@ -148,7 +168,8 @@ export async function handler(event) {
   } catch (error) {
     const statusCode = error.message.includes('required') ||
       error.message.includes('must') ||
-      error.message.includes('Unknown')
+      error.message.includes('Unknown') ||
+      error.message.includes('not found')
       ? 400
       : 500;
     return json(statusCode, { error: error.message });

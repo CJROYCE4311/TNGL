@@ -36,6 +36,7 @@ function AdminNight() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [resetBusy, setResetBusy] = useState(false);
+  const [removeBusyId, setRemoveBusyId] = useState('');
 
   useEffect(() => {
     loadAdmin();
@@ -55,6 +56,7 @@ function AdminNight() {
       }
       if (data.teams?.length) {
         setTeams(data.teams.map((team, index) => ({
+          teamId: team.id,
           teamName: team.team_name || `Team ${index + 1}`,
           playerIds: team.players.map((player) => player.id)
         })));
@@ -106,6 +108,7 @@ function AdminNight() {
       const next = [
         ...current,
         {
+          teamId: '',
           teamName: draftTeam.teamName || `Team ${current.length + 1}`,
           playerIds: draftTeam.playerIds
         }
@@ -115,7 +118,31 @@ function AdminNight() {
     });
   }
 
-  function removeTeam(index) {
+  async function removeTeam(index) {
+    const team = teams[index];
+    if (team?.teamId && activeEventId) {
+      const confirmed = window.confirm(`Remove ${team.teamName} from this game? Any saved scores for that team will be cleared.`);
+      if (!confirmed) return;
+
+      setRemoveBusyId(team.teamId);
+      setError('');
+      setMessage('');
+      try {
+        await apiPost('/.netlify/functions/admin-event', {
+          action: 'removeTeam',
+          eventId: activeEventId,
+          teamId: team.teamId
+        });
+        setMessage(`${team.teamName} removed. Those players are available for a new team.`);
+        await loadAdmin();
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setRemoveBusyId('');
+      }
+      return;
+    }
+
     setTeams((current) => {
       const next = current.filter((_, teamIndex) => teamIndex !== index);
       if (!draftTeam.playerIds.length) setDraftTeam((draft) => ({ ...draft, teamName: `Team ${next.length + 1}` }));
@@ -208,14 +235,14 @@ function AdminNight() {
               <h2>Tonight's Game</h2>
             </div>
             <div className="setup-actions">
-              <button type="button" onClick={saveEvent} disabled={busy || resetBusy}>
+              <button type="button" onClick={saveEvent} disabled={busy || resetBusy || Boolean(removeBusyId)}>
                 {busy ? 'Saving...' : 'Publish Teams'}
               </button>
               <button
                 type="button"
                 className="danger"
                 onClick={resetScores}
-                disabled={resetBusy || busy || !activeEventId || scorecardCount === 0}
+                disabled={resetBusy || busy || Boolean(removeBusyId) || !activeEventId || scorecardCount === 0}
               >
                 {resetBusy ? 'Resetting...' : 'Reset Game'}
               </button>
@@ -321,10 +348,17 @@ function AdminNight() {
           )));
           const cardSizeError = teamSizeError(gameType, team.playerIds.length);
           return (
-            <article className="panel team-card" key={`${team.teamName}-${index}`}>
+            <article className="panel team-card" key={team.teamId || `${team.teamName}-${index}`}>
               <div className="team-card-head">
                 <input value={team.teamName} onChange={(event) => updateTeamName(index, event.target.value)} />
-                <button type="button" className="ghost compact-button" onClick={() => removeTeam(index)}>Remove</button>
+                <button
+                  type="button"
+                  className="ghost compact-button"
+                  onClick={() => removeTeam(index)}
+                  disabled={busy || resetBusy || Boolean(removeBusyId)}
+                >
+                  {removeBusyId && removeBusyId === team.teamId ? 'Removing...' : 'Remove'}
+                </button>
               </div>
               <div className="team-meta">
                 <strong>{gameType === 'best_ball' ? 'Player dots' : `Team handicap ${formatScore(handicap)}`}</strong>
