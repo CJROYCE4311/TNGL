@@ -30,6 +30,7 @@ function AdminNight() {
   const [status, setStatus] = useState('open');
   const [teams, setTeams] = useState([]);
   const [draftTeam, setDraftTeam] = useState(() => emptyDraftTeam('couples_scramble', 1));
+  const [draftCoupleKeys, setDraftCoupleKeys] = useState([]);
   const [activeEventId, setActiveEventId] = useState('');
   const [scorecardCount, setScorecardCount] = useState(0);
   const [message, setMessage] = useState('');
@@ -62,9 +63,11 @@ function AdminNight() {
           playerIds: team.players.map((player) => player.id)
         })));
         setDraftTeam(emptyDraftTeam(nextGameType, data.teams.length + 1));
+        setDraftCoupleKeys([]);
       } else {
         setTeams([]);
         setDraftTeam(emptyDraftTeam(nextGameType, 1));
+        setDraftCoupleKeys([]);
       }
     } catch (err) {
       setError(err.message);
@@ -98,6 +101,29 @@ function AdminNight() {
   }
 
   function addDraftTeam() {
+    if (gameType === 'couples_scramble') {
+      if (!selectedCouples.length) {
+        setError('Select one or more couples');
+        return;
+      }
+
+      setError('');
+      setTeams((current) => {
+        const next = [
+          ...current,
+          ...selectedCouples.map((couple) => ({
+            teamId: '',
+            teamName: couple.lastName,
+            playerIds: couple.players.map((player) => player.id)
+          }))
+        ];
+        setDraftTeam(emptyDraftTeam(gameType, next.length + 1));
+        setDraftCoupleKeys([]);
+        return next;
+      });
+      return;
+    }
+
     const sizeError = teamSizeError(gameType, draftTeam.playerIds.length);
     if (sizeError) {
       setError(sizeError);
@@ -185,23 +211,25 @@ function AdminNight() {
     });
   }
 
-  function selectDraftCouple(couple) {
+  function toggleDraftCouple(coupleKey) {
     setError('');
-    setDraftTeam({
-      teamId: '',
-      teamName: couple.lastName,
-      playerIds: couple.players.map((player) => player.id)
-    });
+    setDraftCoupleKeys((current) => (
+      current.includes(coupleKey)
+        ? current.filter((key) => key !== coupleKey)
+        : [...current, coupleKey]
+    ));
   }
 
   function clearDraftTeam() {
     setDraftTeam(emptyDraftTeam(gameType, teams.length + 1));
+    setDraftCoupleKeys([]);
     setError('');
   }
 
   function changeGameType(nextGameType) {
     setGameType(nextGameType);
     setDraftTeam(emptyDraftTeam(nextGameType, teams.length + 1));
+    setDraftCoupleKeys([]);
     setError('');
   }
 
@@ -235,10 +263,35 @@ function AdminNight() {
     () => new Set(teams.flatMap((team) => team.playerIds)),
     [teams]
   );
-  const draftPlayers = draftTeam.playerIds.map((playerId) => playerById.get(playerId)).filter(Boolean);
-  const draftHandicap = calculateTeamHandicap(gameType, draftPlayers);
-  const draftSizeError = teamSizeError(gameType, draftTeam.playerIds.length);
   const coupleOptions = useMemo(() => buildCoupleOptions(players), [players]);
+  const selectedCouples = coupleOptions.filter((couple) => (
+    draftCoupleKeys.includes(couple.key) &&
+    !couple.players.some((player) => assignedPlayerIds.has(player.id))
+  ));
+  const selectedCoupleCount = selectedCouples.length;
+  const draftPlayers = gameType === 'couples_scramble'
+    ? selectedCouples.flatMap((couple) => couple.players)
+    : draftTeam.playerIds.map((playerId) => playerById.get(playerId)).filter(Boolean);
+  const draftHandicap = calculateTeamHandicap(gameType, draftPlayers);
+  const draftSizeError = gameType === 'couples_scramble'
+    ? ''
+    : teamSizeError(gameType, draftTeam.playerIds.length);
+  const draftTeamNameValue = gameType === 'couples_scramble'
+    ? selectedCoupleCount
+      ? `${selectedCoupleCount} couple${selectedCoupleCount === 1 ? '' : 's'} selected`
+      : ''
+    : draftTeam.teamName;
+  const draftPanelWarning = gameType === 'couples_scramble'
+    ? selectedCoupleCount === 0
+    : Boolean(draftSizeError);
+  const draftPanelValue = gameType === 'couples_scramble'
+    ? selectedCoupleCount
+    : formatScore(draftHandicap);
+  const draftPanelStatus = gameType === 'couples_scramble'
+    ? selectedCoupleCount
+      ? `${selectedCoupleCount} ready to add`
+      : 'Select one or more couples'
+    : draftSizeError || 'Ready to add';
 
   return (
     <main className="app-shell">
@@ -295,7 +348,7 @@ function AdminNight() {
           <div className="section-heading">
             <div>
               <p className="eyebrow">Add Team</p>
-              <h2>{gameType === 'couples_scramble' ? 'Pick Couple' : 'Pick Players'}</h2>
+              <h2>{gameType === 'couples_scramble' ? 'Pick Couples' : 'Pick Players'}</h2>
             </div>
             <strong>{teams.length} added</strong>
           </div>
@@ -303,30 +356,30 @@ function AdminNight() {
             <label>
               Team Name
               <input
-                value={draftTeam.teamName}
+                value={draftTeamNameValue}
                 readOnly={gameType === 'couples_scramble'}
                 onChange={(event) => setDraftTeam((current) => ({ ...current, teamName: event.target.value }))}
-                placeholder={gameType === 'couples_scramble' ? 'Select a couple' : undefined}
+                placeholder={gameType === 'couples_scramble' ? 'Select couples' : undefined}
               />
             </label>
-            <div className={draftSizeError ? 'team-rule warning' : 'team-rule'}>
-              <strong>{formatScore(draftHandicap)}</strong>
-              <span>{draftSizeError || 'Ready to add'}</span>
+            <div className={draftPanelWarning ? 'team-rule warning' : 'team-rule'}>
+              <strong>{draftPanelValue}</strong>
+              <span>{draftPanelStatus}</span>
             </div>
           </div>
           {gameType === 'couples_scramble' ? (
             <div className="player-pick-grid compact">
               {coupleOptions.map((couple) => {
                 const alreadyAssigned = couple.players.some((player) => assignedPlayerIds.has(player.id));
-                const selected = sameIds(draftTeam.playerIds, couple.players.map((player) => player.id));
+                const selected = draftCoupleKeys.includes(couple.key);
                 return (
-                  <label key={couple.lastName} className={selected ? 'pick selected' : 'pick'}>
+                  <label key={couple.key} className={selected ? 'pick selected' : 'pick'}>
                     <input
-                      type="radio"
+                      type="checkbox"
                       name="draft-couple"
                       checked={selected}
                       disabled={alreadyAssigned}
-                      onChange={() => selectDraftCouple(couple)}
+                      onChange={() => toggleDraftCouple(couple.key)}
                     />
                     <span>
                       <strong>{couple.lastName}</strong>
@@ -371,7 +424,13 @@ function AdminNight() {
             </div>
           )}
           <div className="builder-actions">
-            <button type="button" onClick={addDraftTeam} disabled={Boolean(draftSizeError)}>Add the Team</button>
+            <button
+              type="button"
+              onClick={addDraftTeam}
+              disabled={gameType === 'couples_scramble' ? selectedCoupleCount === 0 : Boolean(draftSizeError)}
+            >
+              {gameType === 'couples_scramble' ? 'Add Teams' : 'Add the Team'}
+            </button>
             <button type="button" className="ghost" onClick={clearDraftTeam}>Clear</button>
           </div>
         </div>
@@ -1013,6 +1072,7 @@ function buildCoupleOptions(players) {
   return [...groups.entries()]
     .filter(([, groupPlayers]) => groupPlayers.length === 2)
     .map(([lastName, groupPlayers]) => ({
+      key: lastName.toLowerCase(),
       lastName,
       players: [...groupPlayers].sort((a, b) => genderSort(a.gender) - genderSort(b.gender))
     }))
@@ -1041,12 +1101,6 @@ function lastNameForPlayer(name) {
 
 function genderSort(gender) {
   return String(gender || '').toLowerCase().startsWith('men') ? 0 : 1;
-}
-
-function sameIds(left, right) {
-  if (left.length !== right.length) return false;
-  const rightIds = new Set(right);
-  return left.every((id) => rightIds.has(id));
 }
 
 function formatDate(value) {
