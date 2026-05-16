@@ -30,6 +30,11 @@ export async function handler(event) {
     const teamPlayers = team.players || [];
     const teamScores = normalizeTeamScores(body.scores || body.teamScores || []);
     const playerScores = normalizePlayerScores(body.playerScores || {});
+    const saveScope = {
+      autoSave: Boolean(body.autoSave),
+      changedHoleNumber: Number(body.changedHoleNumber),
+      changedPlayerId: body.changedPlayerId || null
+    };
 
     const now = new Date().toISOString();
     const scorecard = await upsertScorecard(supabase, {
@@ -44,6 +49,7 @@ export async function handler(event) {
         teamPlayers,
         holes,
         playerScores,
+        saveScope,
         now
       });
     } else {
@@ -51,6 +57,7 @@ export async function handler(event) {
         scorecardId: scorecard.id,
         holes,
         teamScores,
+        saveScope,
         now
       });
     }
@@ -107,7 +114,29 @@ async function upsertScorecard(supabase, { eventId, teamId, now }) {
   return data;
 }
 
-async function saveTeamScores(supabase, { scorecardId, holes, teamScores, now }) {
+async function saveTeamScores(supabase, { scorecardId, holes, teamScores, saveScope, now }) {
+  const { data: existingScores, error: existingError } = await supabase
+    .from('hole_scores')
+    .select('hole_number, gross_score')
+    .eq('scorecard_id', scorecardId);
+  if (existingError) throw existingError;
+
+  const holeNumbers = new Set(holes.map((hole) => Number(hole.hole_number)));
+  const mergedScores = new Map(
+    (existingScores || [])
+      .filter((score) => holeNumbers.has(Number(score.hole_number)))
+      .map((score) => [Number(score.hole_number), score.gross_score])
+  );
+
+  for (const hole of holes) {
+    if (isScopedToAnotherHole(saveScope, hole.hole_number)) continue;
+    if (!hasOwn(teamScores, hole.hole_number)) continue;
+    const grossScore = normalizeGrossScore(teamScores[hole.hole_number]);
+    if (grossScore !== null) {
+      mergedScores.set(hole.hole_number, grossScore);
+    }
+  }
+
   const { error: deleteError } = await supabase
     .from('hole_scores')
     .delete()
@@ -118,7 +147,7 @@ async function saveTeamScores(supabase, { scorecardId, holes, teamScores, now })
     .map((hole) => ({
       scorecard_id: scorecardId,
       hole_number: hole.hole_number,
-      gross_score: normalizeGrossScore(teamScores[hole.hole_number]),
+      gross_score: mergedScores.get(hole.hole_number) ?? null,
       updated_at: now
     }))
     .filter((row) => row.gross_score !== null);
@@ -129,7 +158,41 @@ async function saveTeamScores(supabase, { scorecardId, holes, teamScores, now })
   }
 }
 
-async function saveBestBallScores(supabase, { scorecardId, teamPlayers, holes, playerScores, now }) {
+async function saveBestBallScores(supabase, { scorecardId, teamPlayers, holes, playerScores, saveScope, now }) {
+  const { data: existingScores, error: existingError } = await supabase
+    .from('hole_scores')
+    .select('hole_number, notes')
+    .eq('scorecard_id', scorecardId);
+  if (existingError) throw existingError;
+
+  const playerIds = new Set(teamPlayers.map((player) => player.id));
+  const mergedPlayerScores = {};
+  for (const score of existingScores || []) {
+    const parsed = parseNotes(score.notes);
+    for (const playerScore of parsed.playerScores || []) {
+      if (!playerIds.has(playerScore.player_id)) continue;
+      mergedPlayerScores[score.hole_number] = {
+        ...(mergedPlayerScores[score.hole_number] || {}),
+        [playerScore.player_id]: playerScore.gross_score
+      };
+    }
+  }
+
+  for (const hole of holes) {
+    if (isScopedToAnotherHole(saveScope, hole.hole_number)) continue;
+    if (!hasOwn(playerScores, hole.hole_number)) continue;
+    for (const player of teamPlayers) {
+      if (saveScope?.autoSave && saveScope.changedPlayerId && saveScope.changedPlayerId !== player.id) continue;
+      const holePlayerScores = playerScores[hole.hole_number] || {};
+      if (!hasOwn(holePlayerScores, player.id)) continue;
+      const grossScore = normalizeGrossScore(holePlayerScores[player.id]);
+      mergedPlayerScores[hole.hole_number] = mergedPlayerScores[hole.hole_number] || {};
+      if (grossScore !== null) {
+        mergedPlayerScores[hole.hole_number][player.id] = grossScore;
+      }
+    }
+  }
+
   const { error: deleteError } = await supabase
     .from('hole_scores')
     .delete()
@@ -146,7 +209,7 @@ async function saveBestBallScores(supabase, { scorecardId, teamPlayers, holes, p
   for (const hole of holes) {
     const holePlayerRows = [];
     for (const player of teamPlayers) {
-      const grossScore = normalizeGrossScore(playerScores[hole.hole_number]?.[player.id]);
+      const grossScore = normalizeGrossScore(mergedPlayerScores[hole.hole_number]?.[player.id]);
       if (grossScore === null) continue;
       const dots = dotsByPlayer[player.id]?.[hole.hole_number] || 0;
       const row = {
@@ -275,6 +338,16 @@ function parseNotes(value) {
   } catch {
     return {};
   }
+}
+
+function hasOwn(object, key) {
+  return Object.prototype.hasOwnProperty.call(object || {}, key);
+}
+
+function isScopedToAnotherHole(saveScope, holeNumber) {
+  return saveScope?.autoSave &&
+    Number.isFinite(saveScope.changedHoleNumber) &&
+    Number(saveScope.changedHoleNumber) !== Number(holeNumber);
 }
 
 function isMissingColumnError(error, columnName) {

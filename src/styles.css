@@ -515,6 +515,14 @@ h2 {
   font-size: 1.55rem;
 }
 
+.save-status {
+  color: #647066;
+  font-size: 0.85rem;
+  font-weight: 800;
+  margin: -4px 2px 0;
+  text-align: right;
+}
+
 .multi-card-actions {
   display: grid;
   gap: 10px;

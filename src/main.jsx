@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { apiGet, apiPost } from './api';
 import leagueLogoUrl from '../branding/sg-couples-league-horizontal.svg';
@@ -332,9 +332,16 @@ function ScorePage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState('');
+  const autoSaveTimerRef = useRef(null);
+  const autoSaveSequenceRef = useRef(0);
 
   useEffect(() => {
     loadActive();
+  }, []);
+
+  useEffect(() => () => {
+    if (autoSaveTimerRef.current) window.clearTimeout(autoSaveTimerRef.current);
   }, []);
 
   async function loadActive() {
@@ -369,36 +376,99 @@ function ScorePage() {
   }
 
   function changeTeam(teamId) {
+    if (autoSaveTimerRef.current) window.clearTimeout(autoSaveTimerRef.current);
+    setAutoSaveStatus('');
     setSelectedTeamId(teamId);
     hydrateScores(detail, teamId);
   }
 
   function updateTeamScore(holeNumber, value) {
-    setTeamScores((current) => ({ ...current, [holeNumber]: cleanScore(value) }));
+    setTeamScores((current) => {
+      const cleanValue = cleanScore(value);
+      const next = { ...current, [holeNumber]: cleanValue };
+      scheduleAutoSave({ [holeNumber]: cleanValue }, {}, { changedHoleNumber: holeNumber });
+      return next;
+    });
   }
 
   function updatePlayerScore(holeNumber, playerId, value) {
-    setPlayerScores((current) => ({
-      ...current,
-      [holeNumber]: {
-        ...(current[holeNumber] || {}),
-        [playerId]: cleanScore(value)
+    setPlayerScores((current) => {
+      const cleanValue = cleanScore(value);
+      const next = {
+        ...current,
+        [holeNumber]: {
+          ...(current[holeNumber] || {}),
+          [playerId]: cleanValue
+        }
+      };
+      scheduleAutoSave({}, { [holeNumber]: { [playerId]: cleanValue } }, {
+        changedHoleNumber: holeNumber,
+        changedPlayerId: playerId
+      });
+      return next;
+    });
+  }
+
+  function scheduleAutoSave(nextTeamScores, nextPlayerScores, saveOptions = {}) {
+    if (!selectedTeamId || !detail?.event) return;
+    if (autoSaveTimerRef.current) window.clearTimeout(autoSaveTimerRef.current);
+    setMessage('');
+    setAutoSaveStatus('Saving...');
+    const sequence = autoSaveSequenceRef.current + 1;
+    autoSaveSequenceRef.current = sequence;
+    autoSaveTimerRef.current = window.setTimeout(async () => {
+      try {
+        const saved = await persistScore(nextTeamScores, nextPlayerScores, {
+          autoSave: true,
+          ...saveOptions
+        });
+        if (autoSaveSequenceRef.current !== sequence) return;
+        updateScorecardInDetail(saved.scorecard);
+        setAutoSaveStatus('Saved');
+        setError('');
+      } catch (err) {
+        if (autoSaveSequenceRef.current !== sequence) return;
+        setAutoSaveStatus('Save failed');
+        setError(err.message);
       }
-    }));
+    }, 700);
+  }
+
+  async function persistScore(nextTeamScores = teamScores, nextPlayerScores = playerScores, saveOptions = {}) {
+    return apiPost('/.netlify/functions/save-score', {
+      eventId: detail.event.id,
+      teamId: selectedTeamId,
+      teamScores: nextTeamScores,
+      playerScores: nextPlayerScores,
+      ...saveOptions
+    });
+  }
+
+  function updateScorecardInDetail(scorecard) {
+    if (!scorecard) return;
+    setDetail((current) => {
+      if (!current) return current;
+      const existing = current.scorecards || [];
+      const hasScorecard = existing.some((card) => card.id === scorecard.id);
+      return {
+        ...current,
+        scorecards: hasScorecard
+          ? existing.map((card) => (card.id === scorecard.id ? scorecard : card))
+          : [...existing, scorecard]
+      };
+    });
   }
 
   async function saveScore(submit = false) {
     if (!selectedTeamId || !detail?.event) return;
+    if (autoSaveTimerRef.current) window.clearTimeout(autoSaveTimerRef.current);
     setBusy(true);
     setError('');
     setMessage('');
+    setAutoSaveStatus('');
     try {
-      await apiPost('/.netlify/functions/save-score', {
-        eventId: detail.event.id,
-        teamId: selectedTeamId,
-        teamScores,
-        playerScores
-      });
+      const saved = await persistScore();
+      updateScorecardInDetail(saved.scorecard);
       if (submit) {
         await apiPost('/.netlify/functions/submit-scorecard', {
           eventId: detail.event.id,
@@ -490,6 +560,7 @@ function ScorePage() {
               <strong>{formatScore(summaryNet)}</strong>
             </div>
           </section>
+          {autoSaveStatus && <p className="save-status">{autoSaveStatus}</p>}
 
           <section className="multi-card-actions">
             <button type="button" onClick={() => saveScore(false)} disabled={busy}>{busy ? 'Saving...' : 'Save'}</button>
