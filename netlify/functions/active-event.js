@@ -7,7 +7,7 @@ export async function handler(event) {
 
   try {
     const supabase = serviceClient();
-    const leagueEvent = await activeEvent(supabase);
+    const leagueEvent = await activeEvent(supabase, { requireTeams: true });
     const detail = await eventDetail(supabase, leagueEvent?.id);
 
     return json(200, detail);

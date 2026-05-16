@@ -7,7 +7,7 @@ export async function handler(event) {
 
   try {
     const supabase = serviceClient();
-    const eventId = event.queryStringParameters?.eventId || (await activeEvent(supabase))?.id;
+    const eventId = event.queryStringParameters?.eventId || (await activeEvent(supabase, { requireTeams: true }))?.id;
     const detail = await eventDetail(supabase, eventId);
     const teamById = new Map(detail.teams.map((team) => [team.id, team]));
 

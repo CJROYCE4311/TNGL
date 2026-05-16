@@ -28,17 +28,28 @@ export async function latestPlayerRows(supabase) {
   }));
 }
 
-export async function activeEvent(supabase) {
+export async function activeEvent(supabase, { requireTeams = false } = {}) {
   const { data, error } = await supabase
     .from('league_events')
     .select('id, external_league_id, league_name, event_date, format, status, course_name, nine, hole_count')
     .eq('status', 'open')
     .order('event_date', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(10);
 
   if (error) throw error;
-  return data;
+  if (!requireTeams) return data?.[0] || null;
+
+  for (const leagueEvent of data || []) {
+    const { count, error: teamError } = await supabase
+      .from('teams')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', leagueEvent.id)
+      .eq('is_active', true);
+    if (teamError) throw teamError;
+    if (count > 0) return leagueEvent;
+  }
+
+  return null;
 }
 
 export async function eventDetail(supabase, eventId) {
