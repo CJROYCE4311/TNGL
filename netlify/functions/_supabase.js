@@ -35,9 +35,14 @@ export function handleOptions(event) {
 }
 
 export function serviceClient() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error('Missing Supabase service environment variables');
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SERVICE_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE;
+  const missing = [];
+  if (!url) missing.push('SUPABASE_URL or VITE_SUPABASE_URL');
+  if (!key) missing.push('SUPABASE_SERVICE_ROLE_KEY');
+  if (missing.length) throw new Error(`Missing Supabase service environment variables: ${missing.join(', ')}`);
   return createClient(url, key, {
     auth: {
       persistSession: false,
@@ -47,9 +52,12 @@ export function serviceClient() {
 }
 
 function anonClient() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_ANON_KEY;
-  if (!url || !key) throw new Error('Missing Supabase anon environment variables');
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  const missing = [];
+  if (!url) missing.push('SUPABASE_URL or VITE_SUPABASE_URL');
+  if (!key) missing.push('SUPABASE_ANON_KEY or VITE_SUPABASE_ANON_KEY');
+  if (missing.length) throw new Error(`Missing Supabase anon environment variables: ${missing.join(', ')}`);
   return createClient(url, key, {
     auth: {
       persistSession: false,
