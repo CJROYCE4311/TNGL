@@ -50,7 +50,10 @@ function AdminNight() {
       setPlayers(data.players || []);
       setActiveEventId(data.event?.id || '');
       setScorecardCount(data.scorecards?.length || 0);
-      const nextGameType = data.event?.game_type || 'couples_scramble';
+      const hasPublishedSetup = Boolean(data.teams?.length || data.scorecards?.length);
+      const nextGameType = hasPublishedSetup
+        ? data.event?.game_type || 'couples_scramble'
+        : 'couples_scramble';
       if (data.event) {
         setEventDate(data.event.event_date || todayIso());
         setGameType(nextGameType);
