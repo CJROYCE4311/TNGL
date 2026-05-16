@@ -1,49 +1,45 @@
-import { assertUuid, handleOptions, json, requireAdmin, requireUser, serviceClient } from './_supabase.js';
+import { activeEvent, eventDetail } from './_event-data.js';
+import { handleOptions, json, serviceClient } from './_supabase.js';
 
 export async function handler(event) {
   const options = handleOptions(event);
   if (options) return options;
 
   try {
-    const auth = await requireUser(event);
-    if (auth.error) return auth.error;
-    const adminError = requireAdmin(auth);
-    if (adminError) return adminError;
-
-    const eventId = event.queryStringParameters?.eventId;
-    assertUuid(eventId, 'eventId');
-
     const supabase = serviceClient();
-    const { data, error } = await supabase
-      .from('scorecards')
-      .select(`
-        team_id,
-        status,
-        gross_total,
-        net_total,
-        submitted_at,
-        teams (
-          team_name
-        )
-      `)
-      .eq('event_id', eventId)
-      .order('net_total', { ascending: true, nullsFirst: false })
-      .order('gross_total', { ascending: true, nullsFirst: false });
+    const eventId = event.queryStringParameters?.eventId || (await activeEvent(supabase))?.id;
+    const detail = await eventDetail(supabase, eventId);
+    const teamById = new Map(detail.teams.map((team) => [team.id, team]));
 
-    if (error) throw error;
+    const leaderboard = (detail.scorecards || [])
+      .map((card) => {
+        const team = teamById.get(card.team_id);
+        return {
+          team_id: card.team_id,
+          team_name: team?.team_name || 'Team',
+          players: team?.players?.map((player) => player.display_name) || [],
+          status: card.status,
+          playing_handicap: team?.team_handicap,
+          gross_total: card.gross_total,
+          net_total: card.net_total,
+          holes_played: (card.hole_scores || []).filter((score) => Number(score.gross_score) > 0).length,
+          submitted_at: card.submitted_at
+        };
+      })
+      .sort((a, b) => {
+        const aNet = Number.isFinite(Number(a.net_total)) ? Number(a.net_total) : 999;
+        const bNet = Number.isFinite(Number(b.net_total)) ? Number(b.net_total) : 999;
+        if (aNet !== bNet) return aNet - bNet;
+        return (Number(a.gross_total) || 999) - (Number(b.gross_total) || 999);
+      });
 
     return json(200, {
-      leaderboard: (data || []).map((row) => ({
-        team_id: row.team_id,
-        team_name: row.teams?.team_name || 'Team',
-        status: row.status,
-        gross_total: row.gross_total,
-        net_total: row.net_total,
-        submitted_at: row.submitted_at
-      }))
+      event: detail.event,
+      holes: detail.holes,
+      hole_count: detail.holes.length,
+      leaderboard
     });
   } catch (error) {
-    const statusCode = error.message.includes('required') ? 400 : 500;
-    return json(statusCode, { error: error.message });
+    return json(500, { error: error.message });
   }
 }

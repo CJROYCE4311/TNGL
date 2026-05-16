@@ -18,6 +18,8 @@ export async function handler(event) {
       .from('scorecards')
       .select(`
         status,
+        selected_player_ids,
+        playing_handicap,
         gross_total,
         net_total,
         submitted_at,
@@ -35,7 +37,7 @@ export async function handler(event) {
 
     if (error) throw error;
 
-    const columns = ['team_id', 'team_name', 'status', 'gross_total', 'net_total', 'submitted_at'];
+    const columns = ['team_id', 'team_name', 'status', 'playing_handicap', 'gross_total', 'net_total', 'submitted_at', 'selected_player_ids'];
     for (let hole = 1; hole <= 18; hole += 1) columns.push(`hole_${hole}`);
 
     const rows = [columns.join(',')];
@@ -46,9 +48,11 @@ export async function handler(event) {
           card.teams?.external_team_id,
           card.teams?.team_name,
           card.status,
+          card.playing_handicap,
           card.gross_total,
           card.net_total,
           card.submitted_at,
+          (card.selected_player_ids || []).join('|'),
           ...Array.from({ length: 18 }, (_, index) => byHole.get(index + 1) || '')
         ].map(csvCell).join(',')
       );

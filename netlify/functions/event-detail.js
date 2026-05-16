@@ -31,6 +31,9 @@ export async function handler(event) {
             flight,
             team_players (
               position,
+              assigned_role,
+              course_handicap_100,
+              playing_handicap,
               players (
                 id,
                 external_player_id,
@@ -63,7 +66,13 @@ export async function handler(event) {
         ...team,
         players: (team.team_players || [])
           .sort((a, b) => (a.position || 0) - (b.position || 0))
-          .map((row) => row.players)
+          .map((row) => row.players ? {
+            ...row.players,
+            position: row.position,
+            assigned_role: row.assigned_role,
+            course_handicap_100: row.course_handicap_100,
+            playing_handicap: row.playing_handicap
+          } : null)
           .filter(Boolean)
       })),
       holes: holes || [],

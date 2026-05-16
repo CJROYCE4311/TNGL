@@ -16,6 +16,7 @@ create table if not exists league_events (
   league_name text not null default 'Sterling Grove Thursday League',
   event_date date not null,
   format text not null check (format in ('scramble', 'best_ball', 'other')),
+  game_type text not null default 'couples_scramble' check (game_type in ('couples_scramble', 'scramble', 'best_ball')),
   course_id uuid references courses(id),
   course_name text,
   nine text,
@@ -111,6 +112,8 @@ create table if not exists scorecards (
   scorer_user_id uuid,
   scorer_email text,
   status text not null default 'in_progress' check (status in ('in_progress', 'submitted', 'locked')),
+  selected_player_ids uuid[],
+  playing_handicap numeric(6,2),
   gross_total integer,
   net_total numeric(6,2),
   submitted_at timestamptz,
@@ -130,6 +133,18 @@ create table if not exists hole_scores (
   unique(scorecard_id, hole_number)
 );
 
+create table if not exists player_hole_scores (
+  id uuid primary key default gen_random_uuid(),
+  scorecard_id uuid not null references scorecards(id) on delete cascade,
+  player_id uuid not null references players(id) on delete cascade,
+  hole_number integer not null check (hole_number between 1 and 18),
+  gross_score integer check (gross_score between 1 and 20),
+  net_score numeric(5,2),
+  dots integer not null default 0,
+  updated_at timestamptz not null default now(),
+  unique(scorecard_id, player_id, hole_number)
+);
+
 create table if not exists tonight_states (
   id text primary key,
   state jsonb not null,
@@ -141,6 +156,7 @@ create index if not exists idx_teams_event_id on teams(event_id);
 create index if not exists idx_team_players_team_id on team_players(team_id);
 create index if not exists idx_scorecards_event_id on scorecards(event_id);
 create index if not exists idx_hole_scores_scorecard_id on hole_scores(scorecard_id);
+create index if not exists idx_player_hole_scores_scorecard_id on player_hole_scores(scorecard_id);
 
 alter table courses enable row level security;
 alter table league_events enable row level security;
@@ -152,6 +168,7 @@ alter table team_players enable row level security;
 alter table event_holes enable row level security;
 alter table scorecards enable row level security;
 alter table hole_scores enable row level security;
+alter table player_hole_scores enable row level security;
 alter table tonight_states enable row level security;
 
 -- V1 uses Netlify Functions with the service role key for reads and writes.

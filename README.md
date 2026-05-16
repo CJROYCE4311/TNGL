@@ -6,13 +6,15 @@ This app is intentionally separate from the Caddie server app and does not conne
 
 ## What Is Included
 
-- Immediate "Tonight" mode for couples scramble scoring, with shared live state when deployed with Supabase and local fallback when the shared endpoint is unavailable.
 - Vite + React phone-first scoring UI.
-- Supabase magic-link login.
+- No-login player scoring and public leaderboard.
+- Hidden URL admin page at `/admin-night` for league-night setup.
 - Netlify Functions for all league reads and scoring writes.
 - Supabase SQL schema in `supabase-schema.sql`.
 - CSV-to-SQL seed script that preserves existing league IDs from `csv_tables`.
-- Admin leaderboard and authenticated CSV export.
+- Admin team builder for couples scramble, 4/5-player scramble, and best-ball events.
+- Team scoring that lets players select their published team and enter the correct scorecard for the format.
+- Public live leaderboard and admin CSV export.
 
 ## Local Setup
 
@@ -40,16 +42,11 @@ Run locally:
 npm run dev
 ```
 
-If `.env` is not filled in yet, the app opens in Tonight mode. When deployed with Netlify Functions and Supabase service environment variables, Tonight mode syncs check-ins, foursome assignments, scores, and submissions through the shared `tonight_states` table so multiple devices see the same live state. If the shared endpoint is unavailable, Tonight mode falls back to browser local storage.
+Routes:
 
-Tonight mode includes:
-
-- Couple check-in list from the current league CSV player names.
-- Foursome assignment selector for each checked-in couple.
-- One scorecard per foursome with side-by-side scramble team scoring.
-- Live leaderboard toggle.
-- Local CSV export.
-- Temporary Sterling Grove course imagery from public Sterling Grove web assets.
+- `/admin-night` creates the active event, chooses the game, builds teams, and previews handicaps/dots.
+- `/score` lets players select their team and enter scores without login.
+- `/leaderboard` shows the public live board.
 
 ## Supabase Setup
 
@@ -57,8 +54,8 @@ Tonight mode includes:
 2. Open the SQL Editor.
 3. Run `supabase-schema.sql`.
    - If the database already exists, run `supabase/patches/2026-05-16-add-tonight-states.sql`.
-4. Enable email magic links in Supabase Auth.
-5. Add trusted scorers/admins in Supabase Auth.
+   - Also run `supabase/patches/2026-05-16-add-scorecard-player-selection.sql` to support selected players and calculated card handicaps on scorecards.
+4. Optional: run `supabase/patches/2026-05-16-reimagined-public-scoring.sql` for forward-compatible game type/player-hole score columns. The app also works against the existing starter schema by storing game type in `league_events.nine` and best-ball player detail in `hole_scores.notes`.
 
 The browser only receives the anon key. The service role key is used only by Netlify Functions.
 
@@ -121,19 +118,20 @@ Set `VITE_AUTH_REDIRECT_URL` to the deployed Netlify site URL. Supabase Auth mag
 
 - `GET /.netlify/functions/events`
 - `GET /.netlify/functions/event-detail?eventId=...`
-- `GET /.netlify/functions/tonight-state`
-- `POST /.netlify/functions/tonight-state`
+- `GET /.netlify/functions/active-event`
+- `GET /.netlify/functions/admin-event`
+- `POST /.netlify/functions/admin-event`
 - `POST /.netlify/functions/save-score`
 - `POST /.netlify/functions/submit-scorecard`
 - `GET /.netlify/functions/leaderboard?eventId=...`
 - `GET /.netlify/functions/export-results?eventId=...`
 
-Tonight-state endpoints do not require login and are intended for the quick league-night scoring flow. Event, scorecard, leaderboard, and export endpoints require login. Leaderboard and export require the signed-in email to be listed in `LEAGUE_ADMIN_EMAILS`.
+Admin, scoring, and leaderboard endpoints do not require login by design. The admin page is protected only by its hidden URL, which is convenient for league night but not strong security.
 
 ## V1 Limitations
 
 - No GHIN integration.
 - No Caddie integration.
-- No public leaderboard.
+- Admin URL is hidden but not authenticated.
 - No edit history beyond `updated_at`.
-- No scorer/team assignment rules yet; any signed-in scorer can save scores, and admin-only views are email-gated.
+- No scorer/team assignment rules yet; anyone with the scoring URL can save a scorecard.

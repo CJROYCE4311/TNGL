@@ -1,4 +1,6 @@
-import { assertUuid, handleOptions, json, parseJson, requireUser, serviceClient } from './_supabase.js';
+import { eventDetail } from './_event-data.js';
+import { normalizeHoles } from './_scoring.js';
+import { assertUuid, handleOptions, json, parseJson, serviceClient } from './_supabase.js';
 
 export async function handler(event) {
   const options = handleOptions(event);
@@ -7,21 +9,13 @@ export async function handler(event) {
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
 
   try {
-    const auth = await requireUser(event);
-    if (auth.error) return auth.error;
-
     const body = parseJson(event);
     assertUuid(body.eventId, 'eventId');
     assertUuid(body.teamId, 'teamId');
 
     const supabase = serviceClient();
-    const { data: leagueEvent, error: eventError } = await supabase
-      .from('league_events')
-      .select('hole_count')
-      .eq('id', body.eventId)
-      .single();
-
-    if (eventError) throw eventError;
+    const detail = await eventDetail(supabase, body.eventId);
+    const requiredHoles = normalizeHoles(detail.holes).length;
 
     const { data: scorecard, error: cardError } = await supabase
       .from('scorecards')
@@ -40,7 +34,6 @@ export async function handler(event) {
 
     if (countError) throw countError;
 
-    const requiredHoles = leagueEvent.hole_count || 9;
     if ((count || 0) < requiredHoles) {
       return json(400, { error: `Scorecard needs ${requiredHoles} holes before submit` });
     }
