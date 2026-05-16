@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SG Couples League Branding Preview</title>
+    <style>
+      :root {
+        --navy: #0b2341;
+        --cream: #f2e6cf;
+        --sand: #d8bf8d;
+        --fairway: #5f873c;
+        --grove: #173922;
+        --mountain: #394758;
+        --sky: #8fb7bf;
+        --gold: #d89b3a;
+        --paper: #f7f4ec;
+        --ink: #172033;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--paper);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      main {
+        width: min(1180px, calc(100vw - 40px));
+        margin: 0 auto;
+        padding: 40px 0 56px;
+      }
+
+      header {
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        align-items: end;
+        padding-bottom: 28px;
+        border-bottom: 1px solid rgba(11, 35, 65, 0.22);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 4vw, 4.75rem);
+        line-height: 0.95;
+        letter-spacing: 0;
+      }
+
+      p {
+        max-width: 34rem;
+        margin: 0;
+        font-size: 1rem;
+        line-height: 1.55;
+      }
+
+      section {
+        padding-top: 34px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 18px;
+      }
+
+      .panel {
+        min-height: 320px;
+        display: grid;
+        place-items: center;
+        padding: 32px;
+        border: 1px solid rgba(11, 35, 65, 0.16);
+        background: white;
+      }
+
+      .wide {
+        grid-column: span 12;
+      }
+
+      .half {
+        grid-column: span 6;
+      }
+
+      .third {
+        grid-column: span 4;
+      }
+
+      .navy-bg {
+        background: var(--navy);
+      }
+
+      .sand-bg {
+        background: var(--sand);
+      }
+
+      img {
+        display: block;
+        max-width: 100%;
+        max-height: 320px;
+      }
+
+      .horizontal img {
+        max-height: 190px;
+      }
+
+      .swatches {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      .swatch {
+        width: 180px;
+        min-height: 96px;
+        display: flex;
+        flex-direction: column;
+        justify-content: end;
+        gap: 4px;
+        padding: 14px;
+        border: 1px solid rgba(11, 35, 65, 0.16);
+        font-weight: 700;
+      }
+
+      .swatch span {
+        font-size: 0.78rem;
+        letter-spacing: 0.08em;
+      }
+
+      .swatch.navy {
+        color: white;
+        background: var(--navy);
+      }
+
+      .swatch.cream {
+        color: var(--navy);
+        background: var(--cream);
+      }
+
+      .swatch.sand {
+        color: var(--navy);
+        background: var(--sand);
+      }
+
+      .swatch.fairway {
+        color: white;
+        background: var(--fairway);
+      }
+
+      .swatch.grove {
+        color: white;
+        background: var(--grove);
+      }
+
+      .swatch.mountain {
+        color: white;
+        background: var(--mountain);
+      }
+
+      .swatch.sky {
+        color: var(--navy);
+        background: var(--sky);
+      }
+
+      .swatch.gold {
+        color: var(--navy);
+        background: var(--gold);
+      }
+
+      @media (max-width: 760px) {
+        main {
+          width: min(100vw - 24px, 1180px);
+          padding-top: 24px;
+        }
+
+        header {
+          display: block;
+        }
+
+        header p {
+          margin-top: 14px;
+        }
+
+        .half,
+        .third {
+          grid-column: span 12;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>SG Couples League</h1>
+        <p>Sterling Grove-inspired badge system with transparent SVG files for apparel, golf balls, scorecards, and league web use.</p>
+      </header>
+
+      <section class="grid">
+        <div class="panel wide horizontal">
+          <img src="./sg-couples-league-horizontal.svg" alt="SG Couples League horizontal logo">
+        </div>
+        <div class="panel half">
+          <img src="./sg-couples-league-primary-badge.svg" alt="SG Couples League primary badge">
+        </div>
+        <div class="panel half navy-bg">
+          <img src="./sg-couples-league-primary-badge.svg" alt="SG Couples League primary badge on navy">
+        </div>
+        <div class="panel third">
+          <img src="./sg-couples-league-ball-mark.svg" alt="SG Couples League golf ball mark">
+        </div>
+        <div class="panel third sand-bg">
+          <img src="./sg-couples-league-one-color.svg" alt="SG Couples League one-color badge">
+        </div>
+        <div class="panel third">
+          <div class="swatches" aria-label="Brand colors">
+            <div class="swatch navy">Navy <span>#0B2341</span></div>
+            <div class="swatch cream">Cream <span>#F2E6CF</span></div>
+            <div class="swatch sand">Sand <span>#D8BF8D</span></div>
+            <div class="swatch fairway">Fairway <span>#5F873C</span></div>
+            <div class="swatch grove">Grove <span>#173922</span></div>
+            <div class="swatch mountain">Mountain <span>#394758</span></div>
+            <div class="swatch sky">Sky <span>#8FB7BF</span></div>
+            <div class="swatch gold">Sunset <span>#D89B3A</span></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

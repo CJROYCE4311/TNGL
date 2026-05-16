@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { apiDownload, apiGet, apiPost } from './api';
 import { hasSupabaseConfig, supabase } from './supabaseClient';
+import leagueLogoUrl from '../branding/sg-couples-league-horizontal.svg';
 import './styles.css';
 
 const emptyScores = {};
@@ -256,6 +257,7 @@ function App() {
       <main className="app-shell auth-screen">
         <section className="panel narrow">
           <ModeSwitcher mode={mode} onlineAvailable={hasSupabaseConfig} onModeChange={setMode} />
+          <LeagueLogo className="auth-logo" />
           <p className="eyebrow">Sterling Grove</p>
           <h1>Thursday League Scoring</h1>
           <form onSubmit={signIn} className="stack">
@@ -281,9 +283,12 @@ function App() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <div>
-          <p className="eyebrow">Sterling Grove</p>
-          <h1>Thursday League</h1>
+        <div className="topbar-brand">
+          <LeagueLogo className="topbar-logo" />
+          <div>
+            <p className="eyebrow">Sterling Grove</p>
+            <h1>Thursday League</h1>
+          </div>
         </div>
         <div className="topbar-actions">
           <ModeSwitcher mode={mode} onlineAvailable={hasSupabaseConfig} onModeChange={setMode} />
@@ -531,7 +536,7 @@ function TonightScrambleApp({ onlineAvailable, onModeChange }) {
       <section className="tonight-hero">
         <div className="hero-copy">
           <div className="hero-topline">
-            <AnimatedLeagueLogo />
+            <LeagueLogo className="hero-logo" />
             <ModeSwitcher
               mode="tonight"
               onlineAvailable={onlineAvailable}
@@ -604,14 +609,13 @@ function ModeSwitcher({ mode, onlineAvailable, onModeChange }) {
   );
 }
 
-function AnimatedLeagueLogo() {
+function LeagueLogo({ className = '' }) {
   return (
-    <div className="league-mark" aria-label="Thursday Couples League">
-      <span className="mark-ring" />
-      <span className="mark-ball" />
-      <span className="mark-flag">T</span>
-      <span className="mark-script">Couples</span>
-    </div>
+    <img
+      className={`league-logo ${className}`.trim()}
+      src={leagueLogoUrl}
+      alt="SG Couples League"
+    />
   );
 }
 

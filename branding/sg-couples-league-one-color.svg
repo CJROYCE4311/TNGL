@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" role="img" aria-labelledby="title desc">
+  <title id="title">SG Couples League one-color logo</title>
+  <desc id="desc">Single-color SG Couples League badge with mountain and fairway shapes.</desc>
+  <defs>
+    <style>
+      :root { --ink: #0b2341; }
+      .ink { fill: var(--ink); }
+      .stroke {
+        fill: none;
+        stroke: var(--ink);
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .title {
+        font-family: "Montserrat", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+        font-weight: 900;
+        letter-spacing: 6px;
+      }
+      .sub {
+        font-family: "Montserrat", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+        font-weight: 800;
+        letter-spacing: 5px;
+      }
+    </style>
+  </defs>
+
+  <rect class="stroke" x="150" y="90" width="900" height="1020" rx="102" stroke-width="52"/>
+  <rect class="stroke" x="240" y="170" width="720" height="560" rx="44" stroke-width="24"/>
+  <path class="ink" d="M278 476c52-44 97-66 136-66 37 0 62 20 95 20 48 0 76-62 128-62 47 0 71 51 109 51 40 0 63-33 101-33 34 0 72 23 113 68v84H278Z"/>
+  <path class="stroke" stroke-width="24" d="M344 666c67-102 152-153 256-153s189 51 256 153"/>
+  <path class="stroke" stroke-width="18" d="M414 708c56-34 118-51 186-51s130 17 186 51"/>
+  <text class="title ink" x="600" y="884" font-size="164" text-anchor="middle">SG</text>
+  <text class="sub ink" x="600" y="990" font-size="61" text-anchor="middle">COUPLES LEAGUE</text>
+  <path class="stroke" stroke-width="12" d="M392 1036h416"/>
+</svg>

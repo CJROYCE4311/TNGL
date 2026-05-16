@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" role="img" aria-labelledby="title desc">
+  <title id="title">SG Couples League primary logo</title>
+  <desc id="desc">A modern badge logo for SG Couples League with a Sterling Grove-inspired Arizona golf course scene.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fb7bf"/>
+      <stop offset="0.58" stop-color="#e9c880"/>
+      <stop offset="1" stop-color="#f4e2b4"/>
+    </linearGradient>
+    <linearGradient id="fairway" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9eb95a"/>
+      <stop offset="0.48" stop-color="#5f873c"/>
+      <stop offset="1" stop-color="#244f2d"/>
+    </linearGradient>
+    <clipPath id="scene-clip">
+      <rect x="240" y="170" width="720" height="560" rx="44"/>
+    </clipPath>
+    <style>
+      :root {
+        --navy: #0b2341;
+        --cream: #f2e6cf;
+        --sand: #d8bf8d;
+        --green: #446f37;
+        --deep-green: #173922;
+        --mountain: #394758;
+        --water: #7db4b7;
+        --gold: #d89b3a;
+      }
+
+      .navy { fill: var(--navy); }
+      .cream { fill: var(--cream); }
+      .sand { fill: var(--sand); }
+      .deep-green { fill: var(--deep-green); }
+      .mountain { fill: var(--mountain); }
+      .water { fill: var(--water); }
+      .gold { fill: var(--gold); }
+      .line {
+        fill: none;
+        stroke: var(--navy);
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .title {
+        font-family: "Montserrat", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+        font-weight: 900;
+        letter-spacing: 6px;
+      }
+      .sub {
+        font-family: "Montserrat", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+        font-weight: 800;
+        letter-spacing: 5px;
+      }
+    </style>
+  </defs>
+
+  <rect class="navy" x="130" y="70" width="940" height="1060" rx="112"/>
+  <rect class="cream" x="185" y="125" width="830" height="950" rx="76"/>
+  <g clip-path="url(#scene-clip)">
+    <path fill="url(#sky)" d="M240 170h720v560H240z"/>
+    <circle class="gold" cx="340" cy="320" r="58" opacity="0.9"/>
+    <path fill="#fff3cf" d="M240 355c46-18 92-18 138 0 43 17 85 18 126 2 59-24 111-19 158 16 37 27 80 28 130 4 57-27 113-30 168-9v96H240Z" opacity="0.42"/>
+
+    <path class="mountain" d="M240 458c52-44 97-66 136-66 37 0 62 20 95 20 48 0 76-62 128-62 47 0 71 51 109 51 40 0 63-33 101-33 45 0 95 39 151 90v96H240Z"/>
+    <path fill="#28384d" d="M240 505c66-48 118-72 154-72 45 0 70 32 110 32 39 0 63-28 100-28 39 0 72 37 113 37 47 0 88-33 127-33 37 0 75 22 116 64v98H240Z" opacity="0.68"/>
+
+    <path class="deep-green" d="M240 560c107-31 225-47 354-47 129 0 251 17 366 50v167H240Z"/>
+    <path fill="url(#fairway)" d="M360 730c35-126 115-217 240-272 125 55 205 146 240 272H360Z"/>
+    <path fill="#81a847" d="M468 730c22-105 66-189 132-252 66 63 110 147 132 252H468Z" opacity="0.88"/>
+    <path fill="#2f6331" d="M553 730c11-86 27-170 47-252 20 82 36 166 47 252H553Z" opacity="0.64"/>
+
+    <path class="sand" d="M328 650c78-23 130-14 158 28-49 42-111 48-185 20 3-21 12-37 27-48Z"/>
+    <path class="sand" d="M737 626c72-16 124-3 156 38-44 38-103 45-176 20 2-23 9-43 20-58Z"/>
+    <path class="water" d="M768 704c59-30 123-39 192-25v51H758c-15-8-12-17 10-26Z" opacity="0.92"/>
+
+    <path class="deep-green" d="M305 550c-13-51 20-87 60-63 42 25 28 82-21 96-18-7-31-18-39-33Z"/>
+    <path class="deep-green" d="M883 550c13-51-20-87-60-63-42 25-28 82 21 96 18-7 31-18 39-33Z"/>
+    <path class="deep-green" d="M435 526c-8-40 18-68 49-49 32 19 22 64-17 75-14-5-25-14-32-26Z"/>
+    <path class="deep-green" d="M766 526c8-40-18-68-49-49-32 19-22 64 17 75 14-5 25-14 32-26Z"/>
+    <path fill="none" stroke="#f4e8cf" stroke-width="16" stroke-linecap="round" d="M870 730c-9-69 16-127 74-174"/>
+  </g>
+
+  <rect x="240" y="170" width="720" height="560" rx="44" fill="none" stroke="#0b2341" stroke-width="24"/>
+  <text class="title navy" x="600" y="874" font-size="164" text-anchor="middle">SG</text>
+  <text class="sub navy" x="600" y="980" font-size="61" text-anchor="middle">COUPLES LEAGUE</text>
+  <path class="line" stroke-width="12" d="M392 1026h416"/>
+</svg>
