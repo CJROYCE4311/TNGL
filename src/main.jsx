@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { apiGet, apiPost } from './api';
+import blackGolfBallUrl from './assets/black-golf-ball.svg';
+import goldenGolfBallUrl from './assets/golden-golf-ball.svg';
 import leagueLogoUrl from '../branding/sg-couples-league-horizontal.svg';
 import './styles.css';
 
@@ -861,9 +863,9 @@ function LeaderboardPage() {
           <div className="leaderboard-line leaderboard-head">
             <span>#</span><strong>Team</strong><span>Gross</span><span>Hcp</span><span>Net</span><span>Holes</span>
           </div>
-          {(data?.leaderboard || []).map((row, index) => (
+          {(data?.leaderboard || []).map((row, index, leaderboard) => (
             <div className="leaderboard-line" key={row.team_id}>
-              <span>{index + 1}</span>
+              <LeaderboardPrizeMarker index={index} total={leaderboard.length} />
               <strong>{row.team_name}<small>{row.players.join(' + ')}</small></strong>
               <span>{formatScore(row.gross_total)}</span>
               <span>{formatScore(row.playing_handicap)}</span>
@@ -876,6 +878,26 @@ function LeaderboardPage() {
       </section>
     </main>
   );
+}
+
+function LeaderboardPrizeMarker({ index, total }) {
+  if (index === 0) {
+    return (
+      <span className="leaderboard-prize" role="img" aria-label="First place, golden golf ball winner">
+        <img src={goldenGolfBallUrl} alt="" />
+      </span>
+    );
+  }
+
+  if (total > 1 && index === total - 1) {
+    return (
+      <span className="leaderboard-prize" role="img" aria-label="Last place, black golf ball">
+        <img src={blackGolfBallUrl} alt="" />
+      </span>
+    );
+  }
+
+  return <span>{index + 1}</span>;
 }
 
 function Header({ title }) {
