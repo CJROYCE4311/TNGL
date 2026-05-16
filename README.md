@@ -6,7 +6,7 @@ This app is intentionally separate from the Caddie server app and does not conne
 
 ## What Is Included
 
-- Immediate local "Tonight" mode for couples scramble scoring before Supabase is configured.
+- Immediate "Tonight" mode for couples scramble scoring, with shared live state when deployed with Supabase and local fallback when the shared endpoint is unavailable.
 - Vite + React phone-first scoring UI.
 - Supabase magic-link login.
 - Netlify Functions for all league reads and scoring writes.
@@ -40,7 +40,7 @@ Run locally:
 npm run dev
 ```
 
-If `.env` is not filled in yet, the app opens in Tonight mode. Tonight mode stores check-ins, foursome assignments, scores, submissions, and CSV export in browser local storage so it can be used immediately for a league night pilot.
+If `.env` is not filled in yet, the app opens in Tonight mode. When deployed with Netlify Functions and Supabase service environment variables, Tonight mode syncs check-ins, foursome assignments, scores, and submissions through the shared `tonight_states` table so multiple devices see the same live state. If the shared endpoint is unavailable, Tonight mode falls back to browser local storage.
 
 Tonight mode includes:
 
@@ -56,6 +56,7 @@ Tonight mode includes:
 1. Create a Supabase project.
 2. Open the SQL Editor.
 3. Run `supabase-schema.sql`.
+   - If the database already exists, run `supabase/patches/2026-05-16-add-tonight-states.sql`.
 4. Enable email magic links in Supabase Auth.
 5. Add trusted scorers/admins in Supabase Auth.
 
@@ -120,12 +121,14 @@ Set `VITE_AUTH_REDIRECT_URL` to the deployed Netlify site URL. Supabase Auth mag
 
 - `GET /.netlify/functions/events`
 - `GET /.netlify/functions/event-detail?eventId=...`
+- `GET /.netlify/functions/tonight-state`
+- `POST /.netlify/functions/tonight-state`
 - `POST /.netlify/functions/save-score`
 - `POST /.netlify/functions/submit-scorecard`
 - `GET /.netlify/functions/leaderboard?eventId=...`
 - `GET /.netlify/functions/export-results?eventId=...`
 
-All endpoints require login. Leaderboard and export require the signed-in email to be listed in `LEAGUE_ADMIN_EMAILS`.
+Tonight-state endpoints do not require login and are intended for the quick league-night scoring flow. Event, scorecard, leaderboard, and export endpoints require login. Leaderboard and export require the signed-in email to be listed in `LEAGUE_ADMIN_EMAILS`.
 
 ## V1 Limitations
 

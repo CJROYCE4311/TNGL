@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { apiDownload, apiGet, apiPost } from './api';
 import { hasSupabaseConfig, supabase } from './supabaseClient';
@@ -409,10 +409,99 @@ function TonightScrambleApp({ onlineAvailable, onModeChange }) {
   const [view, setView] = useState('score');
   const [activeGroup, setActiveGroup] = useState('');
   const [tonightMessage, setTonightMessage] = useState('');
+  const [syncStatus, setSyncStatus] = useState('connecting');
+  const sharedReady = useRef(false);
+  const sharedEnabled = useRef(false);
+  const saveTimer = useRef(null);
+  const applyingRemote = useRef(false);
+  const latestRemoteUpdatedAt = useRef('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSharedTonightState() {
+      try {
+        const data = await apiGet('/.netlify/functions/tonight-state');
+        if (cancelled) return;
+
+        sharedReady.current = true;
+        sharedEnabled.current = true;
+        latestRemoteUpdatedAt.current = data.updatedAt || '';
+
+        if (data.state?.version === tonightStateVersion) {
+          applyingRemote.current = true;
+          setState(normalizeTonightState(data.state));
+        } else {
+          const saved = await apiPost('/.netlify/functions/tonight-state', { state });
+          latestRemoteUpdatedAt.current = saved.updatedAt || '';
+        }
+
+        setSyncStatus('synced');
+      } catch {
+        if (cancelled) return;
+        sharedReady.current = true;
+        sharedEnabled.current = false;
+        setSyncStatus('local');
+      }
+    }
+
+    loadSharedTonightState();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('thursdayTonightScoring', JSON.stringify(state));
   }, [state]);
+
+  useEffect(() => {
+    if (!sharedReady.current || !sharedEnabled.current) return;
+    if (applyingRemote.current) {
+      applyingRemote.current = false;
+      return;
+    }
+
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    setSyncStatus('saving');
+    saveTimer.current = setTimeout(async () => {
+      try {
+        const data = await apiPost('/.netlify/functions/tonight-state', { state });
+        latestRemoteUpdatedAt.current = data.updatedAt || '';
+        setSyncStatus('synced');
+      } catch {
+        sharedEnabled.current = false;
+        setSyncStatus('local');
+      }
+    }, 450);
+
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, [state]);
+
+  useEffect(() => {
+    if (!sharedEnabled.current) return undefined;
+    if (syncStatus === 'saving') return undefined;
+
+    const interval = window.setInterval(async () => {
+      try {
+        const data = await apiGet('/.netlify/functions/tonight-state');
+        if (!data.state || data.state.version !== tonightStateVersion) return;
+        if (!data.updatedAt || data.updatedAt === latestRemoteUpdatedAt.current) return;
+        latestRemoteUpdatedAt.current = data.updatedAt;
+        applyingRemote.current = true;
+        setState(normalizeTonightState(data.state));
+        setSyncStatus('synced');
+      } catch {
+        sharedEnabled.current = false;
+        setSyncStatus('local');
+      }
+    }, 4000);
+
+    return () => window.clearInterval(interval);
+  }, [syncStatus]);
 
   const activeCouples = state.couples.filter((couple) => couple.checkedIn);
   const groups = useMemo(() => {
@@ -537,11 +626,14 @@ function TonightScrambleApp({ onlineAvailable, onModeChange }) {
         <div className="hero-copy">
           <div className="hero-topline">
             <LeagueLogo className="hero-logo" />
-            <ModeSwitcher
-              mode="tonight"
-              onlineAvailable={onlineAvailable}
-              onModeChange={onModeChange}
-            />
+            <div className="hero-actions">
+              <SyncPill status={syncStatus} />
+              <ModeSwitcher
+                mode="tonight"
+                onlineAvailable={onlineAvailable}
+                onModeChange={onModeChange}
+              />
+            </div>
           </div>
           <p className="eyebrow">Sterling Grove</p>
           <h1>Thursday Couples Scramble</h1>
@@ -617,6 +709,17 @@ function LeagueLogo({ className = '' }) {
       alt="SG Couples League"
     />
   );
+}
+
+function SyncPill({ status }) {
+  const label = {
+    connecting: 'Connecting',
+    saving: 'Saving',
+    synced: 'Shared live',
+    local: 'Local only'
+  }[status] || 'Local only';
+
+  return <span className={`sync-pill ${status}`}>{label}</span>;
 }
 
 function RosterPanel({ state, onToggle, onGroupChange }) {
@@ -787,11 +890,57 @@ function LeaderboardView({ rows, scores, onExport, onReset }) {
 function readTonightState() {
   try {
     const saved = JSON.parse(localStorage.getItem('thursdayTonightScoring'));
-    if (saved?.version === tonightStateVersion && saved?.couples && saved?.scores) return saved;
+    if (saved?.version === tonightStateVersion && saved?.couples && saved?.scores) return normalizeTonightState(saved);
   } catch {
     return initialTonightState;
   }
   return initialTonightState;
+}
+
+function normalizeTonightState(saved) {
+  if (!saved || saved.version !== tonightStateVersion) return initialTonightState;
+  const savedCouples = new Map((saved.couples || []).map((couple) => [couple.id, couple]));
+  return {
+    version: tonightStateVersion,
+    couples: tonightCouples.map((couple) => {
+      const savedCouple = savedCouples.get(couple.id);
+      return {
+        ...couple,
+        checkedIn: Boolean(savedCouple?.checkedIn),
+        group: normalizeGroup(savedCouple?.group)
+      };
+    }),
+    scores: normalizeTonightScores(saved.scores),
+    submitted: Object.fromEntries(
+      Object.entries(saved.submitted || {}).map(([coupleId, submitted]) => [coupleId, Boolean(submitted)])
+    )
+  };
+}
+
+function normalizeGroup(value) {
+  if (value === '' || value === null || typeof value === 'undefined') return '';
+  const group = Number(value);
+  return Number.isInteger(group) && group > 0 ? group : '';
+}
+
+function normalizeTonightScores(scores) {
+  if (!scores || typeof scores !== 'object') return {};
+  const coupleIds = new Set(tonightCouples.map((couple) => couple.id));
+  return Object.fromEntries(
+    Object.entries(scores)
+      .filter(([coupleId]) => coupleIds.has(coupleId))
+      .map(([coupleId, scoreByHole]) => [
+        coupleId,
+        Object.fromEntries(
+          Object.entries(scoreByHole || {})
+            .filter(([holeNumber]) => Number(holeNumber) >= 1 && Number(holeNumber) <= 9)
+            .map(([holeNumber, score]) => [
+              holeNumber,
+              String(score || '').replace(/[^\d]/g, '').slice(0, 2)
+            ])
+        )
+      ])
+  );
 }
 
 function totalForCouple(scores, coupleId) {

@@ -130,6 +130,12 @@ create table if not exists hole_scores (
   unique(scorecard_id, hole_number)
 );
 
+create table if not exists tonight_states (
+  id text primary key,
+  state jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists idx_league_events_event_date on league_events(event_date);
 create index if not exists idx_teams_event_id on teams(event_id);
 create index if not exists idx_team_players_team_id on team_players(team_id);
@@ -146,6 +152,7 @@ alter table team_players enable row level security;
 alter table event_holes enable row level security;
 alter table scorecards enable row level security;
 alter table hole_scores enable row level security;
+alter table tonight_states enable row level security;
 
 -- V1 uses Netlify Functions with the service role key for reads and writes.
 -- Add explicit RLS policies later if you decide to let the browser query tables directly.

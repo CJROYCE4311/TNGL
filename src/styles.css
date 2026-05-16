@@ -155,6 +155,36 @@ h2 {
   justify-content: space-between;
 }
 
+.hero-actions {
+  align-items: end;
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
+.sync-pill {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(25, 45, 34, 0.15);
+  border-radius: 999px;
+  color: #20342a;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+  padding: 8px 10px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sync-pill.synced {
+  background: #edf5ef;
+  color: #1f5530;
+}
+
+.sync-pill.local {
+  background: #fff0ec;
+  color: #a3341f;
+}
+
 .hero-copy h1 {
   color: #10261b;
   font-size: clamp(2.3rem, 8vw, 5.4rem);
@@ -998,6 +1028,11 @@ h2 {
 
   .hero-topline {
     display: grid;
+  }
+
+  .hero-actions {
+    justify-items: stretch;
+    width: 100%;
   }
 
   .mode-switcher {
