@@ -29,7 +29,7 @@ function AdminNight() {
   const [gameType, setGameType] = useState('couples_scramble');
   const [status, setStatus] = useState('open');
   const [teams, setTeams] = useState([]);
-  const [draftTeam, setDraftTeam] = useState({ teamName: 'Team 1', playerIds: [] });
+  const [draftTeam, setDraftTeam] = useState(() => emptyDraftTeam('couples_scramble', 1));
   const [activeEventId, setActiveEventId] = useState('');
   const [scorecardCount, setScorecardCount] = useState(0);
   const [message, setMessage] = useState('');
@@ -49,9 +49,10 @@ function AdminNight() {
       setPlayers(data.players || []);
       setActiveEventId(data.event?.id || '');
       setScorecardCount(data.scorecards?.length || 0);
+      const nextGameType = data.event?.game_type || 'couples_scramble';
       if (data.event) {
         setEventDate(data.event.event_date || todayIso());
-        setGameType(data.event.game_type || 'couples_scramble');
+        setGameType(nextGameType);
         setStatus(data.event.status || 'open');
       }
       if (data.teams?.length) {
@@ -60,10 +61,10 @@ function AdminNight() {
           teamName: team.team_name || `Team ${index + 1}`,
           playerIds: team.players.map((player) => player.id)
         })));
-        setDraftTeam({ teamName: `Team ${data.teams.length + 1}`, playerIds: [] });
+        setDraftTeam(emptyDraftTeam(nextGameType, data.teams.length + 1));
       } else {
         setTeams([]);
-        setDraftTeam({ teamName: 'Team 1', playerIds: [] });
+        setDraftTeam(emptyDraftTeam(nextGameType, 1));
       }
     } catch (err) {
       setError(err.message);
@@ -113,7 +114,7 @@ function AdminNight() {
           playerIds: draftTeam.playerIds
         }
       ];
-      setDraftTeam({ teamName: `Team ${next.length + 1}`, playerIds: [] });
+      setDraftTeam(emptyDraftTeam(gameType, next.length + 1));
       return next;
     });
   }
@@ -145,7 +146,10 @@ function AdminNight() {
 
     setTeams((current) => {
       const next = current.filter((_, teamIndex) => teamIndex !== index);
-      if (!draftTeam.playerIds.length) setDraftTeam((draft) => ({ ...draft, teamName: `Team ${next.length + 1}` }));
+      if (!draftTeam.playerIds.length) setDraftTeam((draft) => ({
+        ...draft,
+        teamName: emptyDraftTeam(gameType, next.length + 1).teamName
+      }));
       return next;
     });
   }
@@ -181,8 +185,23 @@ function AdminNight() {
     });
   }
 
+  function selectDraftCouple(couple) {
+    setError('');
+    setDraftTeam({
+      teamId: '',
+      teamName: couple.lastName,
+      playerIds: couple.players.map((player) => player.id)
+    });
+  }
+
   function clearDraftTeam() {
-    setDraftTeam({ teamName: `Team ${teams.length + 1}`, playerIds: [] });
+    setDraftTeam(emptyDraftTeam(gameType, teams.length + 1));
+    setError('');
+  }
+
+  function changeGameType(nextGameType) {
+    setGameType(nextGameType);
+    setDraftTeam(emptyDraftTeam(nextGameType, teams.length + 1));
     setError('');
   }
 
@@ -219,6 +238,7 @@ function AdminNight() {
   const draftPlayers = draftTeam.playerIds.map((playerId) => playerById.get(playerId)).filter(Boolean);
   const draftHandicap = calculateTeamHandicap(gameType, draftPlayers);
   const draftSizeError = teamSizeError(gameType, draftTeam.playerIds.length);
+  const coupleOptions = useMemo(() => buildCoupleOptions(players), [players]);
 
   return (
     <main className="app-shell">
@@ -256,7 +276,7 @@ function AdminNight() {
             </label>
             <label>
               Game
-              <select value={gameType} onChange={(event) => setGameType(event.target.value)}>
+              <select value={gameType} onChange={(event) => changeGameType(event.target.value)}>
                 {gameOptions.map((option) => <option key={option} value={option}>{gameLabels[option]}</option>)}
               </select>
             </label>
@@ -275,7 +295,7 @@ function AdminNight() {
           <div className="section-heading">
             <div>
               <p className="eyebrow">Add Team</p>
-              <h2>Pick Players</h2>
+              <h2>{gameType === 'couples_scramble' ? 'Pick Couple' : 'Pick Players'}</h2>
             </div>
             <strong>{teams.length} added</strong>
           </div>
@@ -284,7 +304,9 @@ function AdminNight() {
               Team Name
               <input
                 value={draftTeam.teamName}
+                readOnly={gameType === 'couples_scramble'}
                 onChange={(event) => setDraftTeam((current) => ({ ...current, teamName: event.target.value }))}
+                placeholder={gameType === 'couples_scramble' ? 'Select a couple' : undefined}
               />
             </label>
             <div className={draftSizeError ? 'team-rule warning' : 'team-rule'}>
@@ -292,8 +314,36 @@ function AdminNight() {
               <span>{draftSizeError || 'Ready to add'}</span>
             </div>
           </div>
-          <div className="player-pick-grid compact">
-            {players.map((player) => {
+          {gameType === 'couples_scramble' ? (
+            <div className="player-pick-grid compact">
+              {coupleOptions.map((couple) => {
+                const alreadyAssigned = couple.players.some((player) => assignedPlayerIds.has(player.id));
+                const selected = sameIds(draftTeam.playerIds, couple.players.map((player) => player.id));
+                return (
+                  <label key={couple.lastName} className={selected ? 'pick selected' : 'pick'}>
+                    <input
+                      type="radio"
+                      name="draft-couple"
+                      checked={selected}
+                      disabled={alreadyAssigned}
+                      onChange={() => selectDraftCouple(couple)}
+                    />
+                    <span>
+                      <strong>{couple.lastName}</strong>
+                      <small>
+                        {alreadyAssigned
+                          ? 'Already on a team'
+                          : `${couple.players.map((player) => player.display_name).join(' + ')} · Hcp ${formatScore(calculateTeamHandicap(gameType, couple.players))}`}
+                      </small>
+                    </span>
+                  </label>
+                );
+              })}
+              {!coupleOptions.length && <p className="muted">No matching last-name couples found.</p>}
+            </div>
+          ) : (
+            <div className="player-pick-grid compact">
+              {players.map((player) => {
               const alreadyAssigned = assignedPlayerIds.has(player.id);
               const selected = draftTeam.playerIds.includes(player.id);
               const atLimit = draftTeam.playerIds.length >= maxTeamSize(gameType);
@@ -317,8 +367,9 @@ function AdminNight() {
                   </span>
                 </label>
               );
-            })}
-          </div>
+              })}
+            </div>
+          )}
           <div className="builder-actions">
             <button type="button" onClick={addDraftTeam} disabled={Boolean(draftSizeError)}>Add the Team</button>
             <button type="button" className="ghost" onClick={clearDraftTeam}>Clear</button>
@@ -937,10 +988,53 @@ function teamSizeError(gameType, count) {
   return '';
 }
 
+function emptyDraftTeam(gameType, teamNumber) {
+  return {
+    teamId: '',
+    teamName: gameType === 'couples_scramble' ? '' : `Team ${teamNumber}`,
+    playerIds: []
+  };
+}
+
 function maxTeamSize(gameType) {
   if (gameType === 'couples_scramble') return 2;
   if (gameType === 'scramble') return 5;
   return 4;
+}
+
+function buildCoupleOptions(players) {
+  const groups = new Map();
+  for (const player of players || []) {
+    const lastName = lastNameForPlayer(player.display_name);
+    if (!lastName) continue;
+    groups.set(lastName, [...(groups.get(lastName) || []), player]);
+  }
+
+  return [...groups.entries()]
+    .filter(([, groupPlayers]) => groupPlayers.length === 2)
+    .map(([lastName, groupPlayers]) => ({
+      lastName,
+      players: [...groupPlayers].sort((a, b) => genderSort(a.gender) - genderSort(b.gender))
+    }))
+    .sort((a, b) => a.lastName.localeCompare(b.lastName));
+}
+
+function lastNameForPlayer(name) {
+  const cleaned = String(name || '')
+    .replace(/\([^)]*\)/g, '')
+    .trim();
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+  return (parts.at(-1) || '').replace(/[^a-zA-Z'-]/g, '');
+}
+
+function genderSort(gender) {
+  return String(gender || '').toLowerCase().startsWith('men') ? 0 : 1;
+}
+
+function sameIds(left, right) {
+  if (left.length !== right.length) return false;
+  const rightIds = new Set(right);
+  return left.every((id) => rightIds.has(id));
 }
 
 function formatDate(value) {
