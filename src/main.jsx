@@ -1005,7 +1005,7 @@ function maxTeamSize(gameType) {
 function buildCoupleOptions(players) {
   const groups = new Map();
   for (const player of players || []) {
-    const lastName = lastNameForPlayer(player.display_name);
+    const lastName = coupleLastNameForPlayer(player.display_name);
     if (!lastName) continue;
     groups.set(lastName, [...(groups.get(lastName) || []), player]);
   }
@@ -1017,6 +1017,18 @@ function buildCoupleOptions(players) {
       players: [...groupPlayers].sort((a, b) => genderSort(a.gender) - genderSort(b.gender))
     }))
     .sort((a, b) => a.lastName.localeCompare(b.lastName));
+}
+
+function coupleLastNameForPlayer(name) {
+  const spouseName = parentheticalFullName(name);
+  if (spouseName) return lastNameForPlayer(spouseName);
+  return lastNameForPlayer(name);
+}
+
+function parentheticalFullName(name) {
+  const match = String(name || '').match(/\(([^)]+)\)/);
+  const value = match?.[1]?.trim() || '';
+  return value.split(/\s+/).filter(Boolean).length >= 2 ? value : '';
 }
 
 function lastNameForPlayer(name) {
