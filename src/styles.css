@@ -148,6 +148,13 @@ h2 {
   position: relative;
 }
 
+.hero-topline {
+  align-items: start;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+}
+
 .hero-copy h1 {
   color: #10261b;
   font-size: clamp(2.3rem, 8vw, 5.4rem);
@@ -275,6 +282,30 @@ h2 {
 }
 
 .view-toggle button.active {
+  background: #173222;
+  color: #fff;
+}
+
+.mode-switcher {
+  align-items: center;
+  background: rgba(20, 38, 29, 0.08);
+  border: 1px solid rgba(25, 45, 34, 0.15);
+  border-radius: 8px;
+  display: grid;
+  gap: 5px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 5px;
+}
+
+.mode-switcher button {
+  background: transparent;
+  color: #20342a;
+  min-height: 38px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.mode-switcher button.active {
   background: #173222;
   color: #fff;
 }
@@ -460,6 +491,10 @@ h2 {
   gap: 14px;
   justify-content: space-between;
   margin-bottom: 14px;
+}
+
+.inline-message {
+  margin: 0 0 12px;
 }
 
 .score-table {
@@ -653,6 +688,12 @@ h2 {
   gap: 16px;
   justify-content: space-between;
   margin-bottom: 18px;
+}
+
+.topbar-actions {
+  align-items: center;
+  display: flex;
+  gap: 10px;
 }
 
 .panel {
@@ -934,6 +975,11 @@ h2 {
     align-items: start;
   }
 
+  .topbar-actions {
+    align-items: stretch;
+    display: grid;
+  }
+
   .controls,
   .score-layout {
     grid-template-columns: 1fr;
@@ -1006,6 +1052,14 @@ h2 {
 
   .holes-grid {
     gap: 8px;
+  }
+
+  .hero-topline {
+    display: grid;
+  }
+
+  .mode-switcher {
+    width: 100%;
   }
 
   .panel {

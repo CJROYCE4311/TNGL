@@ -15,33 +15,64 @@ export async function handler(event) {
     assertUuid(body.teamId, 'teamId');
     if (!Array.isArray(body.scores)) throw new Error('scores must be an array');
 
-    const scores = body.scores.map((score) => ({
-      hole_number: Number(score.holeNumber),
-      gross_score: Number(score.grossScore)
+    const scoreByHole = new Map();
+    for (const score of body.scores) {
+      const holeNumber = Number(score.holeNumber);
+      const grossScore = normalizeGrossScore(score.grossScore);
+      scoreByHole.set(holeNumber, grossScore);
+    }
+
+    const scores = [...scoreByHole.entries()].map(([holeNumber, grossScore]) => ({
+      hole_number: holeNumber,
+      gross_score: grossScore
     }));
 
     for (const score of scores) {
       if (!Number.isInteger(score.hole_number) || score.hole_number < 1 || score.hole_number > 18) {
         throw new Error('Hole numbers must be between 1 and 18');
       }
-      if (!Number.isInteger(score.gross_score) || score.gross_score < 1 || score.gross_score > 20) {
+      if (
+        score.gross_score !== null &&
+        (!Number.isInteger(score.gross_score) || score.gross_score < 1 || score.gross_score > 20)
+      ) {
         throw new Error('Gross scores must be whole numbers from 1 to 20');
       }
     }
 
     const supabase = serviceClient();
-    const { data: scorecard, error: cardError } = await supabase
+    const { data: existingScorecard, error: existingError } = await supabase
       .from('scorecards')
-      .upsert(
+      .select('id, status')
+      .eq('event_id', body.eventId)
+      .eq('team_id', body.teamId)
+      .maybeSingle();
+
+    if (existingError) throw existingError;
+
+    const now = new Date().toISOString();
+    const scorecardInput = {
+      event_id: body.eventId,
+      team_id: body.teamId,
+      scorer_user_id: auth.user.id,
+      scorer_email: auth.user.email,
+      updated_at: now
+    };
+
+    const { data: scorecard, error: cardError } = existingScorecard
+      ? await supabase
+        .from('scorecards')
+        .update(scorecardInput)
+        .eq('id', existingScorecard.id)
+        .select('id')
+        .single()
+      : await supabase
+      .from('scorecards')
+      .insert(
         {
-          event_id: body.eventId,
-          team_id: body.teamId,
-          scorer_user_id: auth.user.id,
-          scorer_email: auth.user.email,
+          ...scorecardInput,
           status: 'in_progress',
-          updated_at: new Date().toISOString()
-        },
-        { onConflict: 'event_id,team_id' }
+          created_at: now
+        }
       )
       .select('id')
       .single();
@@ -49,18 +80,29 @@ export async function handler(event) {
     if (cardError) throw cardError;
 
     if (scores.length) {
-      const rows = scores.map((score) => ({
+      const affectedHoles = scores.map((score) => score.hole_number);
+      const { error: deleteError } = await supabase
+        .from('hole_scores')
+        .delete()
+        .eq('scorecard_id', scorecard.id)
+        .in('hole_number', affectedHoles);
+
+      if (deleteError) throw deleteError;
+
+      const rows = scores.filter((score) => score.gross_score !== null).map((score) => ({
         scorecard_id: scorecard.id,
         hole_number: score.hole_number,
         gross_score: score.gross_score,
-        updated_at: new Date().toISOString()
+        updated_at: now
       }));
 
-      const { error: scoreError } = await supabase
-        .from('hole_scores')
-        .upsert(rows, { onConflict: 'scorecard_id,hole_number' });
+      if (rows.length) {
+        const { error: scoreError } = await supabase
+          .from('hole_scores')
+          .insert(rows);
 
-      if (scoreError) throw scoreError;
+        if (scoreError) throw scoreError;
+      }
     }
 
     await refreshScorecardTotal(supabase, scorecard.id);
@@ -74,9 +116,15 @@ export async function handler(event) {
     if (updatedError) throw updatedError;
     return json(200, { scorecard: updated });
   } catch (error) {
-    const statusCode = error.message.includes('required') || error.message.includes('must') ? 400 : 500;
+    const statusCode = error.message.includes('required') || error.message.includes('must') || error.message.includes('between') ? 400 : 500;
     return json(statusCode, { error: error.message });
   }
+}
+
+function normalizeGrossScore(value) {
+  if (value === null || value === '' || typeof value === 'undefined') return null;
+  const score = Number(value);
+  return Number.isFinite(score) ? score : NaN;
 }
 
 async function refreshScorecardTotal(supabase, scorecardId) {
@@ -141,7 +189,9 @@ async function resolveTeamHandicap(supabase, scorecard) {
 
   if (!courseHandicaps.length) return null;
 
-  const allocations = [0.25, 0.2, 0.15, 0.1, 0.1];
+  const allocations = courseHandicaps.length === 2
+    ? [0.35, 0.15]
+    : [0.25, 0.2, 0.15, 0.1, 0.1];
   const eighteenHoleHandicap = courseHandicaps.reduce(
     (total, handicap, index) => total + handicap * (allocations[index] || 0),
     0

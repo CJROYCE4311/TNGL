@@ -51,6 +51,7 @@ const initialTonightState = {
 };
 
 function App() {
+  const [mode, setMode] = useState('tonight');
   const [session, setSession] = useState(null);
   const [email, setEmail] = useState('');
   const [authMessage, setAuthMessage] = useState('');
@@ -73,15 +74,15 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session || mode !== 'online') return;
     loadEvents();
-  }, [session]);
+  }, [session, mode]);
 
   useEffect(() => {
-    if (!selectedEventId) return;
+    if (!selectedEventId || mode !== 'online') return;
     loadEventDetail(selectedEventId);
     loadLeaderboard(selectedEventId);
-  }, [selectedEventId]);
+  }, [selectedEventId, mode]);
 
   const selectedTeam = useMemo(
     () => detail?.teams.find((team) => team.id === selectedTeamId),
@@ -178,17 +179,7 @@ function App() {
     setBusy(true);
     setError('');
     try {
-      const payload = {
-        eventId: selectedEventId,
-        teamId: selectedTeamId,
-        scores: holes
-          .map((hole) => ({
-            holeNumber: hole.hole_number,
-            grossScore: Number(scores[hole.hole_number])
-          }))
-          .filter((score) => Number.isFinite(score.grossScore) && score.grossScore > 0)
-      };
-      await apiPost('/.netlify/functions/save-score', payload);
+      await persistScores();
       await loadEventDetail(selectedEventId);
       await loadLeaderboard(selectedEventId);
     } catch (err) {
@@ -202,7 +193,7 @@ function App() {
     setBusy(true);
     setError('');
     try {
-      await saveScores();
+      await persistScores();
       await apiPost('/.netlify/functions/submit-scorecard', {
         eventId: selectedEventId,
         teamId: selectedTeamId
@@ -214,6 +205,17 @@ function App() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function persistScores() {
+    await apiPost('/.netlify/functions/save-score', {
+      eventId: selectedEventId,
+      teamId: selectedTeamId,
+      scores: holes.map((hole) => ({
+        holeNumber: hole.hole_number,
+        grossScore: scoreForPayload(scores[hole.hole_number])
+      }))
+    });
   }
 
   async function exportCsv() {
@@ -240,14 +242,20 @@ function App() {
     else setAuthMessage('Check your email for the sign-in link.');
   }
 
-  if (!hasSupabaseConfig) {
-    return <TonightScrambleApp />;
+  if (mode === 'tonight' || !hasSupabaseConfig) {
+    return (
+      <TonightScrambleApp
+        onlineAvailable={hasSupabaseConfig}
+        onModeChange={setMode}
+      />
+    );
   }
 
   if (!session) {
     return (
       <main className="app-shell auth-screen">
         <section className="panel narrow">
+          <ModeSwitcher mode={mode} onlineAvailable={hasSupabaseConfig} onModeChange={setMode} />
           <p className="eyebrow">Sterling Grove</p>
           <h1>Thursday League Scoring</h1>
           <form onSubmit={signIn} className="stack">
@@ -277,7 +285,10 @@ function App() {
           <p className="eyebrow">Sterling Grove</p>
           <h1>Thursday League</h1>
         </div>
-        <button className="ghost" onClick={() => supabase.auth.signOut()}>Sign Out</button>
+        <div className="topbar-actions">
+          <ModeSwitcher mode={mode} onlineAvailable={hasSupabaseConfig} onModeChange={setMode} />
+          <button className="ghost" onClick={() => supabase.auth.signOut()}>Sign Out</button>
+        </div>
       </header>
 
       {error && <p className="error banner">{error}</p>}
@@ -388,10 +399,11 @@ function App() {
   );
 }
 
-function TonightScrambleApp() {
+function TonightScrambleApp({ onlineAvailable, onModeChange }) {
   const [state, setState] = useState(() => readTonightState());
   const [view, setView] = useState('score');
   const [activeGroup, setActiveGroup] = useState('');
+  const [tonightMessage, setTonightMessage] = useState('');
 
   useEffect(() => {
     localStorage.setItem('thursdayTonightScoring', JSON.stringify(state));
@@ -420,6 +432,7 @@ function TonightScrambleApp() {
   }, [groups, activeGroup]);
 
   const currentGroup = groups.find((group) => group.group === activeGroup) || groups[0];
+  const currentGroupComplete = isGroupComplete(currentGroup, state.scores);
   const leaderboardRows = activeCouples
     .map((couple) => ({
       ...couple,
@@ -461,6 +474,7 @@ function TonightScrambleApp() {
 
   function updateTonightScore(coupleId, holeNumber, value) {
     const cleaned = value.replace(/[^\d]/g, '').slice(0, 2);
+    setTonightMessage('');
     setState((current) => ({
       ...current,
       scores: {
@@ -479,6 +493,11 @@ function TonightScrambleApp() {
 
   function submitGroup() {
     if (!currentGroup) return;
+    if (!currentGroupComplete) {
+      setTonightMessage('Enter all 9 hole scores for every couple before submitting this foursome.');
+      return;
+    }
+    setTonightMessage('');
     setState((current) => ({
       ...current,
       submitted: {
@@ -511,7 +530,14 @@ function TonightScrambleApp() {
     <main className="tonight-shell">
       <section className="tonight-hero">
         <div className="hero-copy">
-          <AnimatedLeagueLogo />
+          <div className="hero-topline">
+            <AnimatedLeagueLogo />
+            <ModeSwitcher
+              mode="tonight"
+              onlineAvailable={onlineAvailable}
+              onModeChange={onModeChange}
+            />
+          </div>
           <p className="eyebrow">Sterling Grove</p>
           <h1>Thursday Couples Scramble</h1>
           <p className="hero-subtitle">Check in only tonight's couples, assign foursomes before tee time, and keep the leaderboard moving live.</p>
@@ -541,6 +567,8 @@ function TonightScrambleApp() {
               group={currentGroup}
               scores={state.scores}
               submitted={state.submitted}
+              isComplete={currentGroupComplete}
+              message={tonightMessage}
               onScore={updateTonightScore}
               onSubmit={submitGroup}
             />
@@ -550,6 +578,29 @@ function TonightScrambleApp() {
         <LeaderboardView rows={leaderboardRows} scores={state.scores} onExport={exportTonightCsv} onReset={resetTonight} />
       )}
     </main>
+  );
+}
+
+function ModeSwitcher({ mode, onlineAvailable, onModeChange }) {
+  if (!onlineAvailable) return null;
+
+  return (
+    <div className="mode-switcher" aria-label="Scoring mode">
+      <button
+        type="button"
+        className={mode === 'tonight' ? 'active' : ''}
+        onClick={() => onModeChange('tonight')}
+      >
+        Tonight
+      </button>
+      <button
+        type="button"
+        className={mode === 'online' ? 'active' : ''}
+        onClick={() => onModeChange('online')}
+      >
+        Online Login
+      </button>
+    </div>
   );
 }
 
@@ -628,7 +679,7 @@ function GroupTabs({ groups, activeGroup, onChange }) {
   );
 }
 
-function ScoreFoursome({ group, scores, submitted, onScore, onSubmit }) {
+function ScoreFoursome({ group, scores, submitted, isComplete, message, onScore, onSubmit }) {
   if (!group) {
     return (
       <section className="tonight-panel empty-scorecard">
@@ -645,8 +696,9 @@ function ScoreFoursome({ group, scores, submitted, onScore, onSubmit }) {
           <p className="eyebrow">Foursome {group.group}</p>
           <h2>{group.couples.map((couple) => couple.name).join(' vs ')}</h2>
         </div>
-        <button className="primary" onClick={onSubmit}>Submit Foursome</button>
+        <button className="primary" onClick={onSubmit} disabled={!isComplete}>Submit Foursome</button>
       </div>
+      {message && <p className="error inline-message">{message}</p>}
       <div className="score-table">
         <div className="score-row score-header">
           <span>Hole</span>
@@ -750,6 +802,19 @@ function netForCouple(scores, coupleId) {
 
 function playedForCouple(scores, coupleId) {
   return Object.values(scores[coupleId] || {}).filter((score) => Number(score) > 0).length;
+}
+
+function isGroupComplete(group, scores) {
+  if (!group?.couples?.length) return false;
+  return group.couples.every((couple) =>
+    tonightHoles.every((hole) => Number(scores[couple.id]?.[hole.hole_number]) > 0)
+  );
+}
+
+function scoreForPayload(value) {
+  if (value === '' || value === null || typeof value === 'undefined') return null;
+  const score = Number(value);
+  return Number.isFinite(score) && score > 0 ? score : null;
 }
 
 function downloadText(filename, text) {
