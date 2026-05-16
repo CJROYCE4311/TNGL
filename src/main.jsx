@@ -418,6 +418,16 @@ function ScorePage() {
   const holes = detail?.holes?.length ? detail.holes : defaultHoles;
   const team = detail?.teams?.find((row) => row.id === selectedTeamId);
   const card = scorecardForTeam(detail?.scorecards || [], selectedTeamId);
+  const liveTotals = useMemo(() => calculateLiveTotals({
+    gameType: event?.game_type,
+    holes,
+    team,
+    teamScores,
+    playerScores
+  }), [event?.game_type, holes, team, teamScores, playerScores]);
+  const summaryGross = liveTotals.grossTotal ?? card?.gross_total;
+  const summaryHandicap = liveTotals.playingHandicap ?? team?.team_handicap;
+  const summaryNet = liveTotals.netTotal ?? card?.net_total;
 
   return (
     <main className="app-shell">
@@ -469,15 +479,15 @@ function ScorePage() {
           <section className="panel score-summary">
             <div>
               <span>Gross</span>
-              <strong>{formatScore(card?.gross_total)}</strong>
+              <strong>{formatScore(summaryGross)}</strong>
             </div>
             <div>
               <span>Hcp</span>
-              <strong>{formatScore(team?.team_handicap)}</strong>
+              <strong>{formatScore(summaryHandicap)}</strong>
             </div>
             <div>
               <span>Net</span>
-              <strong>{formatScore(card?.net_total)}</strong>
+              <strong>{formatScore(summaryNet)}</strong>
             </div>
           </section>
 
@@ -684,6 +694,65 @@ function frontNineBestBall(player) {
 
 function scorecardForTeam(scorecards, teamId) {
   return (scorecards || []).find((card) => card.team_id === teamId);
+}
+
+function calculateLiveTotals({ gameType, holes, team, teamScores, playerScores }) {
+  if (!gameType || !team) {
+    return {
+      playingHandicap: null,
+      grossTotal: null,
+      netTotal: null
+    };
+  }
+
+  const normalizedHoles = holes?.length ? holes : defaultHoles;
+  if (gameType === 'best_ball') {
+    let grossTotal = 0;
+    let netTotal = 0;
+    let played = 0;
+    const dotsByPlayer = Object.fromEntries((team.players || []).map((player) => [
+      player.id,
+      dotsForHandicap(frontNineBestBall(player))
+    ]));
+
+    for (const hole of normalizedHoles) {
+      const holeScores = (team.players || [])
+        .map((player) => {
+          const gross = Number(playerScores?.[hole.hole_number]?.[player.id]);
+          if (!Number.isFinite(gross) || gross <= 0) return null;
+          const dots = dotsByPlayer[player.id]?.[hole.hole_number] || 0;
+          return {
+            gross,
+            net: gross - dots
+          };
+        })
+        .filter(Boolean);
+
+      if (!holeScores.length) continue;
+      grossTotal += Math.min(...holeScores.map((score) => score.gross));
+      netTotal += Math.min(...holeScores.map((score) => score.net));
+      played += 1;
+    }
+
+    return {
+      playingHandicap: 0,
+      grossTotal: played ? grossTotal : null,
+      netTotal: played ? netTotal : null
+    };
+  }
+
+  const playingHandicap = calculateTeamHandicap(gameType, team.players || []);
+  const grossTotal = normalizedHoles.reduce((total, hole) => {
+    const score = Number(teamScores?.[hole.hole_number]);
+    return Number.isFinite(score) && score > 0 ? total + score : total;
+  }, 0);
+  const played = normalizedHoles.some((hole) => Number(teamScores?.[hole.hole_number]) > 0);
+
+  return {
+    playingHandicap,
+    grossTotal: played ? grossTotal : null,
+    netTotal: played && playingHandicap !== null ? grossTotal - playingHandicap : null
+  };
 }
 
 function cleanScore(value) {

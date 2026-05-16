@@ -222,17 +222,31 @@ async function refreshScorecardTotal(supabase, scorecardId) {
     playerScores
   });
 
+  const totalUpdate = {
+    playing_handicap: totals.playingHandicap,
+    gross_total: totals.grossTotal,
+    net_total: totals.netTotal,
+    updated_at: new Date().toISOString()
+  };
   const { error: updateError } = await supabase
     .from('scorecards')
-    .update({
-      playing_handicap: totals.playingHandicap,
-      gross_total: totals.grossTotal,
-      net_total: totals.netTotal,
-      updated_at: new Date().toISOString()
-    })
+    .update(totalUpdate)
     .eq('id', scorecardId);
 
-  if (updateError) throw updateError;
+  if (!updateError) return;
+
+  if (!isMissingColumnError(updateError, 'playing_handicap')) {
+    throw updateError;
+  }
+
+  const legacyTotalUpdate = { ...totalUpdate };
+  delete legacyTotalUpdate.playing_handicap;
+  const { error: legacyUpdateError } = await supabase
+    .from('scorecards')
+    .update(legacyTotalUpdate)
+    .eq('id', scorecardId);
+
+  if (legacyUpdateError) throw legacyUpdateError;
 }
 
 function normalizeTeamScores(scores) {
@@ -261,4 +275,8 @@ function parseNotes(value) {
   } catch {
     return {};
   }
+}
+
+function isMissingColumnError(error, columnName) {
+  return String(error?.message || '').includes(`'${columnName}' column`);
 }
